@@ -1,0 +1,68 @@
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: iran-info-db
+    env_file:
+      - ./.env
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    ports:
+      - "${POSTGRES_PORT}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: unless-stopped
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: iran-info-backend
+    env_file:
+      - ./.env
+    environment:
+      PORT: ${BACKEND_PORT}
+      DATABASE_HOST: db
+      DATABASE_PORT: 5432
+      DATABASE_USER: ${POSTGRES_USER}
+      DATABASE_PASSWORD: ${POSTGRES_PASSWORD}
+      DATABASE_NAME: ${POSTGRES_DB}
+    ports:
+      - "${BACKEND_PORT}:3000"
+    depends_on:
+      - db
+    restart: unless-stopped
+
+  frontoffice:
+    build:
+      context: ./frontoffice
+      dockerfile: Dockerfile
+    container_name: iran-info-frontoffice
+    env_file:
+      - ./.env
+    environment:
+      VITE_API_BASE_URL: http://localhost:${BACKEND_PORT}/api
+    ports:
+      - "${FRONTOFFICE_PORT}:5173"
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+  backoffice:
+    build:
+      context: ./backoffice
+      dockerfile: Dockerfile
+    container_name: iran-info-backoffice
+    env_file:
+      - ./.env
+    environment:
+      VITE_API_BASE_URL: http://localhost:${BACKEND_PORT}/api
+    ports:
+      - "${BACKOFFICE_PORT}:5174"
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
