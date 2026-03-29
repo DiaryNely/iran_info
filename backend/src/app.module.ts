@@ -2,7 +2,10 @@ import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ArticlesModule } from './articles/articles.module';
+import { AuthModule } from './auth/auth.module';
+import { CategoriesModule } from './categories/categories.module';
 import { HealthController } from './health/health.controller';
+import { UsersModule } from './users/users.module';
 
 @Module({
   imports: [
@@ -17,7 +20,10 @@ import { HealthController } from './health/health.controller';
       autoLoadEntities: true,
       synchronize: true,
     }),
+    UsersModule,
+    AuthModule,
     ArticlesModule,
+    CategoriesModule,
   ],
   controllers: [HealthController],
 })
