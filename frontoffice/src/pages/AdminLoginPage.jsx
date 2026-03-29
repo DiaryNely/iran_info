@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { login } from '../api/client';
 
-export function LoginPage({ onToast }) {
+export function AdminLoginPage({ onToast }) {
   const [form, setForm] = useState({ username: 'admin', password: 'admin123' });
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
@@ -14,7 +14,7 @@ export function LoginPage({ onToast }) {
     try {
       await login(form);
       onToast({ type: 'success', message: 'Connexion reussie.' });
-      navigate('/dashboard');
+      navigate('/admin/dashboard');
     } catch (error) {
       onToast({ type: 'error', message: error.message });
     } finally {

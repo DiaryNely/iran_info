@@ -9,7 +9,7 @@ export function AdminLayout({ children, onToast }) {
   async function handleLogout() {
     await logout();
     onToast({ type: 'success', message: 'Deconnexion reussie.' });
-    navigate('/login');
+    navigate('/admin/login');
   }
 
   return (
@@ -18,9 +18,9 @@ export function AdminLayout({ children, onToast }) {
         <h1>Iran Info</h1>
         <p className="sidebar-sub">BackOffice Admin</p>
         <nav>
-          <NavLink to="/dashboard">Dashboard</NavLink>
-          <NavLink to="/articles">Articles</NavLink>
-          <NavLink to="/categories">Categories</NavLink>
+          <NavLink to="/admin/dashboard">Dashboard</NavLink>
+          <NavLink to="/admin/articles">Articles</NavLink>
+          <NavLink to="/admin/categories">Categories</NavLink>
         </nav>
         <div className="sidebar-footer">
           <p>{user?.username ?? 'admin'}</p>
