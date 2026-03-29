@@ -9,7 +9,10 @@ const DEFAULT_ADMIN = {
 
 async function request(path, options = {}) {
   const headers = new Headers(options.headers ?? {});
-  headers.set('Content-Type', 'application/json');
+  const isFormData = options.body instanceof FormData;
+  if (!isFormData) {
+    headers.set('Content-Type', 'application/json');
+  }
 
   const token = getToken();
   if (token) {
@@ -96,9 +99,18 @@ export const categoriesApi = {
 };
 
 export const articlesApi = {
-  list: () => request('/articles'),
+  list: () => request('/admin/articles'),
+  listPublic: () => request('/articles'),
   bySlug: (slug) => request(`/article/${slug}`),
-  create: (payload) => request('/articles', { method: 'POST', body: JSON.stringify(payload) }),
-  update: (id, payload) => request(`/articles/${id}`, { method: 'PATCH', body: JSON.stringify(payload) }),
+  create: (payload) =>
+    request('/articles', {
+      method: 'POST',
+      body: payload instanceof FormData ? payload : JSON.stringify(payload),
+    }),
+  update: (id, payload) =>
+    request(`/articles/${id}`, {
+      method: 'PATCH',
+      body: payload instanceof FormData ? payload : JSON.stringify(payload),
+    }),
   remove: (id) => request(`/articles/${id}`, { method: 'DELETE' }),
 };
