@@ -1,17 +1,14 @@
 import { useEffect, useState } from 'react';
 import { articlesApi, categoriesApi } from '../api/client';
 
-export function DashboardPage() {
+export function AdminDashboardPage() {
   const [stats, setStats] = useState({ articles: 0, categories: 0 });
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     async function loadStats() {
       try {
-        const [articles, categories] = await Promise.all([
-          articlesApi.list(),
-          categoriesApi.list(),
-        ]);
+        const [articles, categories] = await Promise.all([articlesApi.list(), categoriesApi.list()]);
         setStats({
           articles: Array.isArray(articles) ? articles.length : 0,
           categories: Array.isArray(categories) ? categories.length : 0,

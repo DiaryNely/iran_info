@@ -12,7 +12,7 @@ const emptyForm = {
   categoryIds: [],
 };
 
-export function ArticlesPage({ onToast }) {
+export function AdminArticlesPage({ onToast }) {
   const [articles, setArticles] = useState([]);
   const [categories, setCategories] = useState([]);
   const [form, setForm] = useState(emptyForm);
@@ -22,10 +22,7 @@ export function ArticlesPage({ onToast }) {
   async function loadData() {
     setLoading(true);
     try {
-      const [articlesData, categoriesData] = await Promise.all([
-        articlesApi.list(),
-        categoriesApi.list(),
-      ]);
+      const [articlesData, categoriesData] = await Promise.all([articlesApi.list(), categoriesApi.list()]);
       setArticles(Array.isArray(articlesData) ? articlesData : []);
       setCategories(Array.isArray(categoriesData) ? categoriesData : []);
     } catch (error) {
@@ -166,7 +163,7 @@ export function ArticlesPage({ onToast }) {
               {saving ? 'Sauvegarde...' : form.id ? 'Mettre a jour' : 'Creer'}
             </button>
             {form.id ? (
-              <button type="button" className="btn btn-outline" onClick={resetForm}>
+              <button type="button" className="btn btn-secondary" onClick={resetForm}>
                 Annuler
               </button>
             ) : null}

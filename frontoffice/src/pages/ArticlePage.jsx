@@ -12,7 +12,7 @@ export function ArticlePage() {
       return;
     }
 
-    fetch(`${API_BASE}/articles/${slug}`)
+    fetch(`${API_BASE}/article/${slug}`)
       .then((response) => response.json())
       .then((data) => setArticle(data))
       .catch(() => setArticle(null));
@@ -20,7 +20,7 @@ export function ArticlePage() {
 
   if (!article) {
     return (
-      <main>
+      <main className="public-main">
         <p>Article introuvable.</p>
         <Link to="/">Retour a l'accueil</Link>
       </main>
@@ -28,7 +28,7 @@ export function ArticlePage() {
   }
 
   return (
-    <main>
+    <main className="public-main">
       <h2>{article.title}</h2>
       <p>{article.content}</p>
       <Link to="/">Retour a l'accueil</Link>

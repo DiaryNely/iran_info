@@ -10,7 +10,7 @@ const emptyForm = {
   metaDescription: '',
 };
 
-export function CategoriesPage({ onToast }) {
+export function AdminCategoriesPage({ onToast }) {
   const [categories, setCategories] = useState([]);
   const [form, setForm] = useState(emptyForm);
   const [loading, setLoading] = useState(true);
@@ -119,7 +119,7 @@ export function CategoriesPage({ onToast }) {
               {form.id ? 'Mettre a jour' : 'Creer'}
             </button>
             {form.id ? (
-              <button type="button" className="btn btn-outline" onClick={resetForm}>
+              <button type="button" className="btn btn-secondary" onClick={resetForm}>
                 Annuler
               </button>
             ) : null}

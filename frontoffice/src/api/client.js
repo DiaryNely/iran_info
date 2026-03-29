@@ -25,10 +25,7 @@ async function request(path, options = {}) {
     let message = 'Une erreur est survenue';
     try {
       const body = await response.json();
-      message =
-        typeof body?.message === 'string'
-          ? body.message
-          : JSON.stringify(body?.message ?? body);
+      message = typeof body?.message === 'string' ? body.message : JSON.stringify(body?.message ?? body);
     } catch {
       message = response.statusText || message;
     }
@@ -100,6 +97,7 @@ export const categoriesApi = {
 
 export const articlesApi = {
   list: () => request('/articles'),
+  bySlug: (slug) => request(`/article/${slug}`),
   create: (payload) => request('/articles', { method: 'POST', body: JSON.stringify(payload) }),
   update: (id, payload) => request(`/articles/${id}`, { method: 'PATCH', body: JSON.stringify(payload) }),
   remove: (id) => request(`/articles/${id}`, { method: 'DELETE' }),

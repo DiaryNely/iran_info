@@ -14,14 +14,14 @@ export function HomePage() {
   }, []);
 
   return (
-    <main>
+    <main className="public-main">
       <h2>Actualites</h2>
       {articles.length === 0 && <p>Aucun article disponible pour le moment.</p>}
       <ul>
         {articles.map((article) => (
           <li key={article.id}>
             <h3>{article.title}</h3>
-            <p>{article.excerpt}</p>
+            <p>{article.metaDescription || (article.content ?? '').slice(0, 140)}...</p>
             <Link to={`/article/${article.slug}`}>Lire</Link>
           </li>
         ))}
