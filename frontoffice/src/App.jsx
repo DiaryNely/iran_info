@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Link, Navigate, Route, Routes } from 'react-router-dom';
+import { Navigate, Route, Routes } from 'react-router-dom';
 import { AdminLayout } from './components/AdminLayout';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { Toast } from './components/Toast';
@@ -7,8 +7,10 @@ import { AdminArticlesPage } from './pages/AdminArticlesPage';
 import { AdminCategoriesPage } from './pages/AdminCategoriesPage';
 import { AdminDashboardPage } from './pages/AdminDashboardPage';
 import { AdminLoginPage } from './pages/AdminLoginPage';
-import { ArticlePage } from './pages/ArticlePage';
-import { HomePage } from './pages/HomePage';
+import { ArticleFrontPage } from './pages/frontoffice/ArticleFrontPage';
+import { CategoriesFrontPage } from './pages/frontoffice/CategoriesFrontPage';
+import { HomeFrontPage } from './pages/frontoffice/HomeFrontPage';
+import { PublicLayout } from './pages/frontoffice/PublicLayout';
 
 export default function App() {
   const [toast, setToast] = useState(null);
@@ -26,36 +28,12 @@ export default function App() {
   return (
     <>
       <Routes>
-        <Route
-          path="/"
-          element={
-            <div className="public-shell">
-              <header className="public-header">
-                <h1>Iran Info</h1>
-                <nav>
-                  <Link to="/">Accueil</Link>
-                  <Link to="/admin/login">Admin</Link>
-                </nav>
-              </header>
-              <HomePage />
-            </div>
-          }
-        />
-        <Route
-          path="/article/:slug"
-          element={
-            <div className="public-shell">
-              <header className="public-header">
-                <h1>Iran Info</h1>
-                <nav>
-                  <Link to="/">Accueil</Link>
-                  <Link to="/admin/login">Admin</Link>
-                </nav>
-              </header>
-              <ArticlePage />
-            </div>
-          }
-        />
+        <Route element={<PublicLayout />}>
+          <Route path="/" element={<HomeFrontPage />} />
+          <Route path="/article/:slug" element={<ArticleFrontPage />} />
+          <Route path="/categorie" element={<CategoriesFrontPage />} />
+          <Route path="/categorie/:slug" element={<CategoriesFrontPage />} />
+        </Route>
 
         <Route path="/admin/login" element={<AdminLoginPage onToast={showToast} />} />
 
