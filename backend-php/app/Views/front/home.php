@@ -18,12 +18,31 @@
   <link rel="stylesheet" href="/assets/frontoffice.css">
 </head>
 <body>
+<?php
+  $headerCategories = is_array($categories ?? null) ? $categories : [];
+  $activeCategorySlug = trim((string) ($selectedCategorySlug ?? ''));
+?>
 <div class="news-shell">
   <header class="news-header">
     <div class="news-header-inner">
       <a href="/" class="news-logo" aria-label="Aller a l'accueil Iran Info">IRAN INFO</a>
       <nav class="news-nav" aria-label="Navigation principale">
-        <a href="/" class="news-nav-link active">Accueil</a>
+        <a href="/" class="news-nav-link <?= $activeCategorySlug === '' ? 'active' : '' ?>">Accueil</a>
+        <?php foreach ($headerCategories as $category): ?>
+          <?php
+            $catName = (string) ($category['name'] ?? 'Categorie');
+            $catSlug = (string) ($category['slug'] ?? '');
+            if ($catSlug === '') {
+                continue;
+            }
+          ?>
+          <a
+            href="/?category=<?= rawurlencode($catSlug) ?>"
+            class="news-nav-link <?= $activeCategorySlug === $catSlug ? 'active' : '' ?>"
+          >
+            <?= htmlspecialchars($catName, ENT_QUOTES, 'UTF-8') ?>
+          </a>
+        <?php endforeach; ?>
       </nav>
       <div class="news-header-actions">
         <a href="/backoffice/login" class="news-admin-link">Admin</a>
@@ -85,7 +104,8 @@
       loading: true,
       query: '',
       selectedDate: '',
-      sortOrder: 'newest'
+      sortOrder: 'newest',
+      selectedCategorySlug: <?= json_encode($activeCategorySlug, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?>
     };
 
     function normalizeToken(token) {
@@ -153,10 +173,58 @@
       return getMediaUrl(path);
     }
 
+    function getSecondaryImageUrl(article) {
+      var gallery = Array.isArray(article && article.galleryImages) ? article.galleryImages : [];
+      if (gallery.length > 0 && gallery[0] && gallery[0].path) {
+        return getMediaUrl(gallery[0].path);
+      }
+      return getArticleImageUrl(article);
+    }
+
+    function getFeaturedImageUrl(article) {
+      var gallery = Array.isArray(article && article.galleryImages) ? article.galleryImages : [];
+      var tagged = gallery.find(function (img) {
+        var alt = String(img && img.alt || '').toLowerCase();
+        return alt.includes('a la une') || alt.includes('alaune') || alt.includes('featured') || alt.includes('une');
+      });
+
+      if (tagged && tagged.path) {
+        return getMediaUrl(tagged.path);
+      }
+
+      return getArticleImageUrl(article);
+    }
+
+    function articleUniqueKey(article) {
+      if (article && article.id !== undefined && article.id !== null) {
+        return 'id:' + String(article.id);
+      }
+      return 'slug:' + String(article && article.slug || '');
+    }
+
+    function uniqueArticles(articles) {
+      var seen = new Set();
+      return (Array.isArray(articles) ? articles : []).filter(function (article) {
+        var key = articleUniqueKey(article);
+        if (seen.has(key)) {
+          return false;
+        }
+        seen.add(key);
+        return true;
+      });
+    }
+
     function getFilteredArticles() {
       var queryTokens = normalizeTextForSearch(state.query);
 
       return state.articles
+        .filter(function (article) {
+          if (!state.selectedCategorySlug) return true;
+          var categories = Array.isArray(article && article.categories) ? article.categories : [];
+          return categories.some(function (category) {
+            return String(category && category.slug || '') === state.selectedCategorySlug;
+          });
+        })
         .filter(function (article) {
           if (queryTokens.length === 0) return true;
 
@@ -197,7 +265,7 @@
     function articleCardHtml(article) {
       var summary = article.metaDescription || ((article.content || '').slice(0, 220) + '...');
       var imageHtml = '';
-      var imageUrl = getArticleImageUrl(article);
+      var imageUrl = getSecondaryImageUrl(article);
 
       if (imageUrl) {
         imageHtml =
@@ -230,33 +298,17 @@
       if (articles.length === 0) return '';
 
       var lead = articles[0];
-      var highlights = articles.slice(1, 5);
-      var leadGallery = Array.isArray(lead.galleryImages) ? lead.galleryImages : [];
-
-      if (highlights.length === 0 && leadGallery.length > 0) {
-        highlights = leadGallery.slice(0, 4).map(function (image, index) {
-          return {
-            __fromGallery: true,
-            id: 'gallery-' + index,
-            slug: lead.slug,
-            title: lead.title,
-            createdAt: lead.createdAt,
-            categoryName: readCategory(lead),
-            coverImageAlt: image.alt || lead.coverImageAlt || lead.title,
-            imagePath: image.path
-          };
-        });
-      }
+      var highlights = uniqueArticles(articles.slice(1, 5));
 
       var popularHtml = popularArticles.map(popularItemHtml).join('');
       var leadSummary = lead.metaDescription || ((lead.content || '').slice(0, 240) + '...');
-      var leadImage = getArticleImageUrl(lead);
+      var leadImage = getFeaturedImageUrl(lead);
       var leadImageHtml = leadImage
         ? '<img src="' + leadImage + '" alt="' + escapeHtml(lead.coverImageAlt || lead.title) + '" class="news-lead-image" loading="lazy" decoding="async" />'
         : '<div class="news-lead-image news-image-fallback">Image indisponible</div>';
 
       var highlightsHtml = highlights.map(function (item) {
-        var image = item.__fromGallery ? getMediaUrl(item.imagePath) : getArticleImageUrl(item);
+        var image = getFeaturedImageUrl(item);
         var thumb = image
           ? '<img src="' + image + '" alt="' + escapeHtml(item.coverImageAlt || item.title) + '" class="news-highlight-thumb" loading="lazy" decoding="async" />'
           : '<div class="news-highlight-thumb news-image-fallback">Image</div>';
@@ -300,7 +352,7 @@
     }
 
     function render() {
-      var filteredArticles = getFilteredArticles();
+      var filteredArticles = uniqueArticles(getFilteredArticles());
       var popularArticles = filteredArticles.slice(0, 5);
       var remainingArticles = filteredArticles.slice(5);
       var feedList = document.getElementById('news-feed-list');

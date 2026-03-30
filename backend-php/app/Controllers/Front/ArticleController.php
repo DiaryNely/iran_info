@@ -5,11 +5,13 @@ declare(strict_types=1);
 namespace App\Controllers\Front;
 
 use App\Repositories\ArticleRepository;
+use App\Repositories\CategoryRepository;
 use Throwable;
 
 final class ArticleController
 {
     private ?ArticleRepository $articles = null;
+    private ?CategoryRepository $categories = null;
 
     private function repo(): ArticleRepository
     {
@@ -17,6 +19,15 @@ final class ArticleController
             $this->articles = new ArticleRepository();
         }
         return $this->articles;
+    }
+
+    private function categoryRepo(): CategoryRepository
+    {
+        if (!$this->categories instanceof CategoryRepository) {
+            $this->categories = new CategoryRepository();
+        }
+
+        return $this->categories;
     }
 
     /** @param array{slug?: string} $params */
@@ -38,9 +49,12 @@ final class ArticleController
                 return;
             }
 
+            $categories = $this->categoryRepo()->findAll();
+
             view('front.article', [
                 'title' => ($article['metaTitle'] ?: $article['title']) . ' | Iran Info',
                 'article' => $article,
+                'categories' => $categories,
             ]);
         } catch (Throwable $e) {
             http_response_code(500);

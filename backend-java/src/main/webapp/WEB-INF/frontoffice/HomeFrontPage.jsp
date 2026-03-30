@@ -31,6 +31,7 @@
 
         <nav class="news-nav" aria-label="Navigation principale">
           <a href="<%= request.getContextPath() %>/" class="news-nav-link active">Accueil</a>
+          <span id="header-category-links"></span>
         </nav>
 
         <div class="news-header-actions">
@@ -88,13 +89,50 @@
   <script>
     (function () {
       var API_BASE = '<%= request.getContextPath() %>/api';
+      var HOME_BASE = '<%= request.getContextPath() %>/';
+      var initialCategory = new URLSearchParams(window.location.search).get('categorie') || '';
       var state = {
         articles: [],
+        categories: [],
         loading: true,
         query: '',
         selectedDate: '',
         sortOrder: 'newest',
+        selectedCategory: initialCategory,
       };
+
+      function renderHeaderCategories() {
+        var container = document.getElementById('header-category-links');
+        if (!container) return;
+
+        var linksHtml = state.categories
+        .filter(function (category) {
+          return !!(category && category.slug);
+        })
+        .map(function (category) {
+          var categorySlug = String(category.slug || '').trim();
+          var href = HOME_BASE + '?categorie=' + encodeURIComponent(categorySlug);
+          var isActive = state.selectedCategory && categorySlug.toLowerCase() === state.selectedCategory.toLowerCase();
+          var className = 'news-nav-link' + (isActive ? ' active' : '');
+
+          return '<a href="' + href + '" class="' + className + '">' + escapeHtml(category.name || '') + '</a>';
+        })
+        .join('');
+
+        container.innerHTML = linksHtml;
+      }
+
+      async function loadCategories() {
+        try {
+          var response = await fetch(API_BASE + '/categories');
+          var data = await response.json();
+          state.categories = Array.isArray(data) ? data : [];
+        } catch (error) {
+          state.categories = [];
+        } finally {
+          renderHeaderCategories();
+        }
+      }
 
       function normalizeToken(token) {
         var cleaned = String(token || '')
@@ -146,8 +184,17 @@
 
       function getFilteredArticles() {
         var queryTokens = normalizeTextForSearch(state.query);
+        var selectedCategorySlug = String(state.selectedCategory || '').trim().toLowerCase();
 
         return state.articles
+          .filter(function (article) {
+            if (!selectedCategorySlug) return true;
+            if (!Array.isArray(article.categories)) return false;
+
+            return article.categories.some(function (category) {
+              return String((category && category.slug) || '').trim().toLowerCase() === selectedCategorySlug;
+            });
+          })
           .filter(function (article) {
             if (queryTokens.length === 0) return true;
 
@@ -391,6 +438,7 @@
       });
 
       setSeo();
+      loadCategories();
       loadArticles();
 
       window.addEventListener('beforeunload', function () {

@@ -276,7 +276,7 @@ final class ArticleController
             return null;
         }
 
-        $targetDir = dirname(__DIR__, 4) . '/public/uploads/articles';
+        $targetDir = dirname(__DIR__, 3) . '/public/uploads/articles';
         if (!is_dir($targetDir)) {
             mkdir($targetDir, 0775, true);
         }
@@ -323,7 +323,7 @@ final class ArticleController
                 continue;
             }
 
-            $targetDir = dirname(__DIR__, 4) . '/public/uploads/articles';
+            $targetDir = dirname(__DIR__, 3) . '/public/uploads/articles';
             if (!is_dir($targetDir)) {
                 mkdir($targetDir, 0775, true);
             }
@@ -349,7 +349,7 @@ final class ArticleController
             return;
         }
 
-        $fullPath = dirname(__DIR__, 4) . '/public' . $path;
+        $fullPath = dirname(__DIR__, 3) . '/public' . $path;
         if (is_file($fullPath)) {
             @unlink($fullPath);
         }

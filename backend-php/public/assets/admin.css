@@ -676,6 +676,20 @@ input[type='file']::file-selector-button {
   font-weight: 600;
 }
 
+.crud-list-card table th:nth-child(4),
+.crud-list-card table td:nth-child(4) {
+  width: 72px;
+}
+
+.thumb {
+  width: 56px;
+  height: 36px;
+  object-fit: cover;
+  border-radius: 6px;
+  border: 1px solid #d5e2da;
+  display: block;
+}
+
 .login-wrap {
   min-height: 100vh;
   display: grid;

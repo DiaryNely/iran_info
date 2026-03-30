@@ -10,6 +10,7 @@
 </head>
 <body>
   <?php
+    $headerCategories = is_array($categories ?? null) ? $categories : [];
     $articleTitle = (string) ($article['title'] ?? 'Article');
     $articleSummary = (string) ($article['metaDescription'] ?? '');
     $articleContent = trim((string) ($article['content'] ?? ''));
@@ -21,8 +22,8 @@
     $authorName = (string) (($article['author']['username'] ?? '') ?: 'Redaction');
     $createdAt = (string) ($article['createdAt'] ?? '');
     $dateFr = $createdAt !== '' ? date('d/m/Y H:i', strtotime($createdAt)) : 'Date inconnue';
-    $categories = is_array($article['categories'] ?? null) ? $article['categories'] : [];
-    $kicker = count($categories) > 0 ? strtoupper((string) ($categories[0]['name'] ?? 'ACTUALITE')) : 'ACTUALITE';
+    $articleCategories = is_array($article['categories'] ?? null) ? $article['categories'] : [];
+    $kicker = count($articleCategories) > 0 ? strtoupper((string) ($articleCategories[0]['name'] ?? 'ACTUALITE')) : 'ACTUALITE';
   ?>
 
 <div class="news-shell">
@@ -31,6 +32,18 @@
       <a href="/" class="news-logo" aria-label="Aller a l'accueil Iran Info">IRAN INFO</a>
       <nav class="news-nav" aria-label="Navigation principale">
         <a href="/" class="news-nav-link">Accueil</a>
+        <?php foreach ($headerCategories as $category): ?>
+          <?php
+            $catName = (string) ($category['name'] ?? 'Categorie');
+            $catSlug = (string) ($category['slug'] ?? '');
+            if ($catSlug === '') {
+                continue;
+            }
+          ?>
+          <a href="/?category=<?= rawurlencode($catSlug) ?>" class="news-nav-link">
+            <?= htmlspecialchars($catName, ENT_QUOTES, 'UTF-8') ?>
+          </a>
+        <?php endforeach; ?>
       </nav>
       <div class="news-header-actions">
         <a href="/backoffice/login" class="news-admin-link">Admin</a>
@@ -76,9 +89,9 @@
 
         <section class="news-sidebar-block" aria-labelledby="category-title">
           <h2 id="category-title">Categories</h2>
-          <?php if (count($categories) > 0): ?>
+          <?php if (count($articleCategories) > 0): ?>
             <ul class="news-context-list">
-              <?php foreach ($categories as $category): ?>
+              <?php foreach ($articleCategories as $category): ?>
                 <li><?= htmlspecialchars((string) ($category['name'] ?? ''), ENT_QUOTES, 'UTF-8') ?></li>
               <?php endforeach; ?>
             </ul>

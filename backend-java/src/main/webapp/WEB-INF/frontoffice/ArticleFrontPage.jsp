@@ -38,6 +38,7 @@
 
         <nav class="news-nav" aria-label="Navigation principale">
           <a href="<%= request.getContextPath() %>/" class="news-nav-link">Accueil</a>
+          <span id="header-category-links"></span>
         </nav>
 
         <div class="news-header-actions">
@@ -61,11 +62,39 @@
     (function () {
       var slug = decodeURIComponent('<%= java.net.URLEncoder.encode(slug, "UTF-8") %>');
       var API_BASE = '<%= request.getContextPath() %>/api';
+      var HOME_BASE = '<%= request.getContextPath() %>/';
       var state = {
         article: null,
         allArticles: [],
         loading: true,
       };
+
+      function renderHeaderCategories(categories) {
+        var container = document.getElementById('header-category-links');
+        if (!container) return;
+
+        var linksHtml = (Array.isArray(categories) ? categories : [])
+        .filter(function (category) {
+          return !!(category && category.slug);
+        })
+        .map(function (category) {
+          var href = HOME_BASE + '?categorie=' + encodeURIComponent(String(category.slug || '').trim());
+          return '<a href="' + href + '" class="news-nav-link">' + escapeHtml(category.name || '') + '</a>';
+        })
+        .join('');
+
+        container.innerHTML = linksHtml;
+      }
+
+      async function loadHeaderCategories() {
+        try {
+          var response = await fetch(API_BASE + '/categories');
+          var data = await response.json();
+          renderHeaderCategories(data);
+        } catch (error) {
+          renderHeaderCategories([]);
+        }
+      }
 
       function toShortDate(value) {
         if (!value) return 'Date inconnue';
@@ -293,6 +322,7 @@
       }
 
       loadArticle();
+      loadHeaderCategories();
 
       function resolveImageUrl(path, width) {
         if (!path) return '';
