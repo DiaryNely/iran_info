@@ -21,7 +21,6 @@
         </nav>
 
         <div class="news-header-actions">
-          <a href="HomeFrontPage.jsp" class="news-subscribe-btn">S'abonner</a>
           <a href="<%= request.getContextPath() %>/backoffice/login" class="news-admin-link">Admin</a>
         </div>
       </div>
