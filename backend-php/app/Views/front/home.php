@@ -284,16 +284,18 @@
       });
     }
 
-    function getFilteredArticles() {
+    function getFilteredArticles(options) {
+      var excludeSelectedCategory = !!(options && options.excludeSelectedCategory);
       var queryTokens = normalizeTextForSearch(state.query);
 
       return state.articles
         .filter(function (article) {
           if (!state.selectedCategorySlug) return true;
           var categories = Array.isArray(article && article.categories) ? article.categories : [];
-          return categories.some(function (category) {
+          var hasSelectedCategory = categories.some(function (category) {
             return String(category && category.slug || '') === state.selectedCategorySlug;
           });
+          return excludeSelectedCategory ? !hasSelectedCategory : hasSelectedCategory;
         })
         .filter(function (article) {
           if (queryTokens.length === 0) return true;
@@ -364,27 +366,42 @@
       );
     }
 
-    function popularItemHtml(article) {
+    function popularItemHtml(article, index) {
+      var rank = Number(index || 0) + 1;
       return (
         '<article class="news-popular-item">' +
+        '<p class="news-popular-rank">Top ' + rank + '</p>' +
         '<h3><a href="/article/' + encodeURIComponent(article.slug) + '">' + escapeHtml(article.title) + '</a></h3>' +
-        '<p>' + escapeHtml(toShortDate(articleDateValue(article))) + '</p>' +
+        '<p>' + escapeHtml(readCategory(article)) + ' | ' + escapeHtml(toShortDate(articleDateValue(article))) + '</p>' +
         '</article>'
       );
     }
 
-    function featuredSectionHtml(articles, popularArticles) {
+    function featuredSectionHtml(articles, sideArticles, popularArticles, remainingArticles) {
       if (articles.length === 0) return '';
 
       var lead = articles[0];
-      var highlights = uniqueArticles(articles).slice(0, 8);
-      var usedKeys = new Set([articleUniqueKey(lead)]);
+      var leadKey = articleUniqueKey(lead);
+      var sideCandidates = uniqueArticles(sideArticles).length > 0 ? uniqueArticles(sideArticles) : uniqueArticles(articles);
+      var highlights = sideCandidates
+        .filter(function (item) {
+          return articleUniqueKey(item) !== leadKey;
+        })
+        .slice(0, 6);
+      var usedKeys = new Set([leadKey]);
+
+      highlights.forEach(function (item) {
+        usedKeys.add(articleUniqueKey(item));
+      });
 
       var cleanedPopular = uniqueArticles(popularArticles).filter(function (item) {
         return !usedKeys.has(articleUniqueKey(item));
       });
 
-      var popularHtml = cleanedPopular.map(popularItemHtml).join('');
+      var popularHtml = cleanedPopular.map(function (item, index) {
+        return popularItemHtml(item, index);
+      }).join('');
+      var remainingHtml = (Array.isArray(remainingArticles) ? remainingArticles : []).map(articleCardHtml).join('');
       var leadSummary = lead.metaDescription || ((lead.content || '').slice(0, 240) + '...');
       var leadImage = getFeaturedImageUrl(lead);
       var leadImageHtml = leadImage
@@ -412,22 +429,28 @@
       }).join('');
 
       return (
-        '<section class="news-featured-block" aria-label="Image principale et a la une">' +
+        '<section class="news-featured-block" aria-label="Image principale et contenus de droite">' +
+        '<div class="news-home-primary">' +
         '<article class="news-lead-card">' +
         '<a href="/article/' + encodeURIComponent(lead.slug) + '" class="news-lead-image-link">' + leadImageHtml + '</a>' +
         '<p class="news-card-kicker">Image principale</p>' +
         '<h3 class="news-lead-title"><a href="/article/' + encodeURIComponent(lead.slug) + '">' + escapeHtml(lead.title) + '</a></h3>' +
+        '<p class="news-card-date">' + escapeHtml(toShortDate(articleDateValue(lead))) + '</p>' +
         '<p class="news-card-summary-large">' + escapeHtml(leadSummary) + '</p>' +
         '</article>' +
-        '<aside class="news-highlights">' +
-        '<h3 class="news-highlights-title">A la une</h3>' +
-        '<div class="news-highlights-list">' + highlightsHtml + '</div>' +
-        '<section class="news-sidebar-block news-inline-side-block" aria-labelledby="popular-title">' +
-        '<h4 id="popular-title">Articles populaires</h4>' +
+        '<div class="news-home-secondary-list">' + remainingHtml + '</div>' +
+        '</div>' +
+        '<aside class="news-home-right-rail">' +
+        '<section class="news-sidebar-block" aria-labelledby="highlights-title">' +
+        '<h3 id="highlights-title" class="news-highlights-title">A la une</h3>' +
+        '<div class="news-highlights-list">' + (highlightsHtml || '<p>Aucun article a la une supplementaire.</p>') + '</div>' +
+        '</section>' +
+        '<section class="news-sidebar-block" aria-labelledby="popular-title">' +
+        '<h3 id="popular-title">Articles populaires</h3>' +
         '<div class="news-popular-list">' + (popularHtml || '<p>Aucun autre article populaire.</p>') + '</div>' +
         '</section>' +
-        '<section class="news-sidebar-block news-inline-side-block" aria-labelledby="newsletter-title">' +
-        '<h4 id="newsletter-title">Newsletter</h4>' +
+        '<section class="news-sidebar-block" aria-labelledby="newsletter-title">' +
+        '<h3 id="newsletter-title">Newsletter</h3>' +
         '<p>Contact redaction: contact@iraninfo.local</p>' +
         '</section>' +
         '</aside>' +
@@ -437,14 +460,21 @@
 
     function render() {
       var filteredArticles = uniqueArticles(getFilteredArticles());
-      var popularArticles = filteredArticles.slice(0, 8);
-      var remainingArticles = filteredArticles;
+      var sideArticles = state.selectedCategorySlug
+        ? uniqueArticles(getFilteredArticles({ excludeSelectedCategory: true }))
+        : filteredArticles;
+
+      if (state.selectedCategorySlug && sideArticles.length === 0) {
+        sideArticles = filteredArticles;
+      }
+
+      var popularArticles = sideArticles.slice(0, 12);
       var feedList = document.getElementById('news-feed-list');
       var emptyMessage = document.getElementById('emptyMessage');
 
-      var featuredHtml = featuredSectionHtml(filteredArticles, popularArticles);
-      var feedCardsHtml = remainingArticles.map(articleCardHtml).join('');
-      feedList.innerHTML = featuredHtml + feedCardsHtml;
+      var remainingArticles = filteredArticles.length > 0 ? filteredArticles.slice(1) : [];
+      var featuredHtml = featuredSectionHtml(filteredArticles, sideArticles, popularArticles, remainingArticles);
+      feedList.innerHTML = featuredHtml;
 
       if (!state.loading && filteredArticles.length === 0) {
         emptyMessage.style.display = '';

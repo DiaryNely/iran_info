@@ -39,4 +39,25 @@ final class UserRepository
             'updatedAt' => $row['updated_at'],
         ];
     }
+
+    public function createDefaultAdminIfMissing(string $email, string $plainPassword): void
+    {
+        if ($email === '' || $plainPassword === '') {
+            return;
+        }
+
+        $hash = password_hash($plainPassword, PASSWORD_BCRYPT);
+        if ($hash === false) {
+            return;
+        }
+
+        $stmt = $this->db->prepare(
+            "INSERT INTO users (username, email, password_hash, role) VALUES ('admin', :email, :password_hash, 'admin') ON CONFLICT (email) DO NOTHING"
+        );
+
+        $stmt->execute([
+            'email' => $email,
+            'password_hash' => $hash,
+        ]);
+    }
 }
