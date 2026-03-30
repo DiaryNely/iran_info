@@ -1,24 +1,27 @@
-# Mini-projet web: Iran Info (Java Servlet/JSP + React + PostgreSQL)
+# Mini-projet web: Iran Info (Java Servlet/JSP + PostgreSQL)
 ## ETU003123 - ETU003142
 
 ## Stack
 - Backend: Java 17, Servlet/JSP (Tomcat), JWT
-- Frontoffice: React + Vite
+- Frontoffice: JSP (rendu serveur) + JavaScript vanilla
 - Backoffice: JSP (rendu serveur) + appels API
 - Base de donnees: PostgreSQL
 - Orchestration: Docker Compose
 
 ## Structure
 - `backend-java/`: API Java + pages JSP backoffice
-- `frontoffice/`: application publique React
+- `backend-java/src/main/webapp/frontoffice/`: pages frontoffice JSP
 - `sql/news_schema.sql`: initialisation de la base
 
 ## Demarrage rapide
 1. Lancer les services:
    - `docker compose up --build -d`
 2. Ouvrir:
-   - Backoffice login: `http://localhost:3000/backoffice/login`
-   - API health: `http://localhost:3000/api/health`
+   - Frontoffice: `http://localhost:5173/`
+   - Backoffice login: `http://localhost:5174/backoffice/login`
+   - API health: `http://localhost:5173/api/health`
+
+Les 2 conteneurs frontoffice et backoffice sont separes, mais executent la meme application JSP (webapp Tomcat), sans React.
 
 
 ## Compte admin par defaut

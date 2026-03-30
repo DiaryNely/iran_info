@@ -365,6 +365,8 @@ public class ArticleService {
         requireMaxLength("meta title", article.getMetaTitle(), 60);
         requireMaxLength("meta description", article.getMetaDescription(), 160);
         requireMaxLength("meta keywords", article.getMetaKeywords(), 255);
+        requireMinLength("meta title", article.getMetaTitle(), 50);
+        requireMinLength("meta description", article.getMetaDescription(), 150);
 
         if (article.getGalleryImages() != null) {
             for (GalleryImage image : article.getGalleryImages()) {
@@ -383,6 +385,12 @@ public class ArticleService {
     private void requireMaxLength(String field, String value, int maxLen) {
         if (value != null && value.length() > maxLen) {
             throw new IllegalArgumentException(field + " must be at most " + maxLen + " characters");
+        }
+    }
+
+    private void requireMinLength(String field, String value, int minLen) {
+        if (value != null && value.length() < minLen) {
+            throw new IllegalArgumentException(field + " must be at least " + minLen + " characters");
         }
     }
 }
