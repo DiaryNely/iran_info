@@ -16,14 +16,14 @@ import java.util.Map;
 
 public class ArticleDao {
 
-    private static final String BASE_SELECT = "SELECT a.id, a.\"authorId\" AS user_id, a.title, a.content, a.cover_image_path, a.cover_image_alt, "
+    private static final String BASE_SELECT = "SELECT a.id, a.user_id AS user_id, a.title, a.content, a.cover_image_path, a.cover_image_alt, "
             +
             "a.gallery_images, a.slug, a.meta_title, a.meta_description, a.meta_keywords, " +
             "a.status, a.featured, NULL::timestamp AS published_at, a.created_at, a.updated_at, " +
             "u.id AS author_id, u.username AS author_username, u.email AS author_email, u.role AS author_role, " +
             "u.created_at AS author_created_at, u.updated_at AS author_updated_at " +
             "FROM articles a " +
-            "JOIN users u ON a.\"authorId\" = u.id";
+            "JOIN users u ON a.user_id = u.id";
 
     public List<Article> findAllPublished() throws SQLException {
         String sql = BASE_SELECT + " WHERE a.status = 'published' ORDER BY a.featured DESC, a.created_at DESC";
@@ -79,9 +79,9 @@ public class ArticleDao {
     }
 
     public Article create(Article article, List<Long> categoryIds) throws SQLException {
-        String sql = "INSERT INTO articles (\"authorId\", title, content, cover_image_path, cover_image_alt, " +
+        String sql = "INSERT INTO articles (user_id, title, content, cover_image_path, cover_image_alt, " +
                 "gallery_images, slug, meta_title, meta_description, meta_keywords, status, featured) " +
-                "VALUES (?, ?, ?, ?, ?, ?::jsonb, ?, ?, ?, ?, ?::articles_status_enum, ?) " +
+            "VALUES (?, ?, ?, ?, ?, ?::jsonb, ?, ?, ?, ?, ?, ?) " +
                 "RETURNING id, created_at, updated_at";
         try (Connection conn = ConnectionManager.getConnection()) {
             conn.setAutoCommit(false);
@@ -127,7 +127,7 @@ public class ArticleDao {
     public Article update(Article article, List<Long> categoryIds) throws SQLException {
         String sql = "UPDATE articles SET title = ?, content = ?, cover_image_path = ?, cover_image_alt = ?, " +
                 "gallery_images = ?::jsonb, slug = ?, meta_title = ?, meta_description = ?, " +
-                "meta_keywords = ?, status = ?::articles_status_enum, featured = ?, updated_at = NOW() " +
+            "meta_keywords = ?, status = ?, featured = ?, updated_at = NOW() " +
                 "WHERE id = ? RETURNING updated_at";
         try (Connection conn = ConnectionManager.getConnection()) {
             conn.setAutoCommit(false);
