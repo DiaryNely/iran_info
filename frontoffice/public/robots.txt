@@ -1,7 +1,0 @@
-User-agent: *
-Allow: /
-
-# Block admin area from indexing
-Disallow: /admin/
-
-Sitemap: https://iran-info.local/sitemap.xml

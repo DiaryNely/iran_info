@@ -23,7 +23,6 @@ services:
     env_file:
       - ./.env
     environment:
-      APP_ENTRY: api
       DATABASE_HOST: db
       DATABASE_PORT: 5432
       DATABASE_USER: ${POSTGRES_USER}
@@ -32,65 +31,13 @@ services:
       JWT_SECRET: ${JWT_SECRET:-change-me-in-production}
       JWT_EXPIRES_IN_SECONDS: ${JWT_EXPIRES_IN_SECONDS:-86400}
       UPLOADS_DIR: /app/uploads/articles
-      CORS_ORIGIN: "http://localhost:${BACKEND_PORT},http://localhost:${FRONTOFFICE_PORT},http://localhost:${BACKOFFICE_PORT}"
+      CORS_ORIGIN: "http://localhost:${FRONTOFFICE_PORT},http://localhost:${BACKOFFICE_PORT:-5174}"
     ports:
       - "${BACKEND_PORT}:8080"
     volumes:
       - ./backend-java/uploads:/app/uploads
     depends_on:
       - db
-    restart: unless-stopped
-
-  frontoffice:
-    build:
-      context: ./backend-java
-      dockerfile: Dockerfile
-    container_name: iran-info-frontoffice
-    env_file:
-      - ./.env
-    environment:
-      APP_ENTRY: frontoffice
-      DATABASE_HOST: db
-      DATABASE_PORT: 5432
-      DATABASE_USER: ${POSTGRES_USER}
-      DATABASE_PASSWORD: ${POSTGRES_PASSWORD}
-      DATABASE_NAME: ${POSTGRES_DB}
-      JWT_SECRET: ${JWT_SECRET:-change-me-in-production}
-      JWT_EXPIRES_IN_SECONDS: ${JWT_EXPIRES_IN_SECONDS:-86400}
-      UPLOADS_DIR: /app/uploads/articles
-      CORS_ORIGIN: "http://localhost:${BACKEND_PORT},http://localhost:${FRONTOFFICE_PORT},http://localhost:${BACKOFFICE_PORT}"
-    ports:
-      - "${FRONTOFFICE_PORT}:8080"
-    depends_on:
-      - db
-    volumes:
-      - ./backend-java/uploads:/app/uploads
-    restart: unless-stopped
-
-  backoffice:
-    build:
-      context: ./backend-java
-      dockerfile: Dockerfile
-    container_name: iran-info-backoffice
-    env_file:
-      - ./.env
-    environment:
-      APP_ENTRY: backoffice
-      DATABASE_HOST: db
-      DATABASE_PORT: 5432
-      DATABASE_USER: ${POSTGRES_USER}
-      DATABASE_PASSWORD: ${POSTGRES_PASSWORD}
-      DATABASE_NAME: ${POSTGRES_DB}
-      JWT_SECRET: ${JWT_SECRET:-change-me-in-production}
-      JWT_EXPIRES_IN_SECONDS: ${JWT_EXPIRES_IN_SECONDS:-86400}
-      UPLOADS_DIR: /app/uploads/articles
-      CORS_ORIGIN: "http://localhost:${BACKEND_PORT},http://localhost:${FRONTOFFICE_PORT},http://localhost:${BACKOFFICE_PORT}"
-    ports:
-      - "${BACKOFFICE_PORT}:8080"
-    depends_on:
-      - db
-    volumes:
-      - ./backend-java/uploads:/app/uploads
     restart: unless-stopped
 
 volumes:
