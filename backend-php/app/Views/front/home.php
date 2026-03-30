@@ -4,24 +4,67 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <?php
-    $seoTitle = 'Actualites Iran et international en continu | Iran Info';
-    $seoDescription = 'Suivez les actualites sur l Iran et l international avec analyses, contexte, reportages et dossiers de reference, mis a jour chaque jour par notre redaction.';
+    $headerCategories = is_array($categories ?? null) ? $categories : [];
+    $activeCategorySlug = trim((string) ($selectedCategorySlug ?? ''));
+    $activeCategoryName = trim((string) ($selectedCategoryName ?? ''));
+    $baseUrl = rtrim((string) ($baseUrl ?? ''), '/');
+    $canonicalUrl = (string) ($canonicalUrl ?? ($baseUrl . '/'));
+    $seoTitle = $activeCategoryName !== ''
+      ? ($activeCategoryName . ' : actualites et analyses | Iran Info')
+      : 'Actualites Iran et international en continu | Iran Info';
+    $seoDescription = $activeCategoryName !== ''
+      ? ('Retrouvez les articles de la categorie ' . $activeCategoryName . ' avec analyses, contexte et points cles pour suivre l actualite en continu.')
+      : 'Suivez les actualites sur l Iran et l international avec analyses, contexte, reportages et dossiers de reference, mis a jour chaque jour par notre redaction.';
+
+    $initialArticles = is_array($articles ?? null) ? $articles : [];
+    $itemList = [];
+    $position = 1;
+    foreach ($initialArticles as $article) {
+        $slug = (string) ($article['slug'] ?? '');
+        $name = (string) ($article['title'] ?? 'Article');
+        if ($slug === '') {
+            continue;
+        }
+        $itemList[] = [
+            '@type' => 'ListItem',
+            'position' => $position,
+            'name' => $name,
+            'url' => $baseUrl . '/article/' . rawurlencode($slug),
+        ];
+        $position++;
+        if ($position > 10) {
+            break;
+        }
+    }
+
+    $homeSchema = [
+        '@context' => 'https://schema.org',
+        '@type' => 'CollectionPage',
+        'name' => $seoTitle,
+        'description' => $seoDescription,
+        'url' => $canonicalUrl,
+        'inLanguage' => 'fr',
+    ];
+
+    if (count($itemList) > 0) {
+        $homeSchema['mainEntity'] = [
+            '@type' => 'ItemList',
+            'itemListElement' => $itemList,
+        ];
+    }
   ?>
   <title><?= htmlspecialchars($seoTitle, ENT_QUOTES, 'UTF-8') ?></title>
   <meta name="description" content="<?= htmlspecialchars($seoDescription, ENT_QUOTES, 'UTF-8') ?>">
   <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large">
-  <link rel="canonical" href="/">
+  <link rel="canonical" href="<?= htmlspecialchars($canonicalUrl, ENT_QUOTES, 'UTF-8') ?>">
   <meta property="og:title" content="<?= htmlspecialchars($seoTitle, ENT_QUOTES, 'UTF-8') ?>">
   <meta property="og:description" content="<?= htmlspecialchars($seoDescription, ENT_QUOTES, 'UTF-8') ?>">
   <meta property="og:type" content="website">
-  <meta property="og:url" content="/">
+  <meta property="og:url" content="<?= htmlspecialchars($canonicalUrl, ENT_QUOTES, 'UTF-8') ?>">
+  <script type="application/ld+json"><?= json_encode($homeSchema, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?></script>
   <link rel="stylesheet" href="/assets/frontoffice.css">
 </head>
 <body>
-<?php
-  $headerCategories = is_array($categories ?? null) ? $categories : [];
-  $activeCategorySlug = trim((string) ($selectedCategorySlug ?? ''));
-?>
 <div class="news-shell">
   <header class="news-header">
     <div class="news-header-inner">
@@ -59,7 +102,7 @@
       <div class="news-home-main">
         <section class="news-section" aria-labelledby="latest-title">
           <div class="news-section-head">
-            <h2 id="latest-title">Tous les articles</h2>
+            <h2 id="latest-title"><?= $activeCategoryName !== '' ? ('Articles : ' . htmlspecialchars($activeCategoryName, ENT_QUOTES, 'UTF-8')) : 'Tous les articles' ?></h2>
           </div>
 
           <div class="news-filters" aria-label="Filtres articles">
