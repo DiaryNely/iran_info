@@ -40,5 +40,27 @@ services:
       - db
     restart: unless-stopped
 
+  backend-php:
+    build:
+      context: ./backend-php
+      dockerfile: Dockerfile
+    container_name: iran-info-backend-php
+    environment:
+      APP_ENV: local
+      APP_DEBUG: 1
+      APP_BASE_URL: http://localhost:${PHP_BACKEND_PORT:-8081}
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_NAME: ${POSTGRES_DB}
+      DB_USER: ${POSTGRES_USER}
+      DB_PASSWORD: ${POSTGRES_PASSWORD}
+    ports:
+      - "${PHP_BACKEND_PORT:-8081}:80"
+    volumes:
+      - ./backend-php:/var/www/html
+    depends_on:
+      - db
+    restart: unless-stopped
+
 volumes:
   postgres_data:
