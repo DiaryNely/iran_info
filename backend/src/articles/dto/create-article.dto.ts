@@ -1,6 +1,7 @@
 import {
   ArrayNotEmpty,
   IsArray,
+  IsBoolean,
   IsInt,
   IsOptional,
   IsString,
@@ -8,6 +9,7 @@ import {
   MaxLength,
   MinLength,
 } from 'class-validator';
+import { Transform } from 'class-transformer';
 
 export class CreateArticleDto {
   @IsString()
@@ -19,28 +21,99 @@ export class CreateArticleDto {
   @MinLength(30)
   content!: string;
 
-  @IsOptional()
-  @IsString()
-  image?: string;
-
   @IsString()
   @MinLength(5)
   @MaxLength(180)
   @Matches(/^[a-z0-9]+(?:-[a-z0-9]+)*$/)
   slug!: string;
 
-  @IsOptional()
+  @IsString()
+  @MinLength(50)
+  @MaxLength(60)
+  metaTitle!: string;
+
+  @IsString()
+  @MinLength(150)
+  @MaxLength(160)
+  metaDescription!: string;
+
   @IsString()
   @MaxLength(255)
-  metaTitle?: string;
+  metaKeywords!: string;
 
+
+
+  @Transform(({ value }) => {
+    if (typeof value === 'boolean') {
+      return value;
+    }
+
+    if (typeof value === 'string') {
+      return value === 'true' || value === '1';
+    }
+
+    return Boolean(value);
+  })
   @IsOptional()
-  @IsString()
-  @MaxLength(300)
-  metaDescription?: string;
+  @IsBoolean()
+  featured?: boolean;
 
+  @IsString()
+  @MinLength(3)
+  @MaxLength(160)
+  coverImageAlt!: string;
+
+  @Transform(({ value }) => {
+    if (Array.isArray(value)) {
+      return value.map((item) => Number(item));
+    }
+
+    if (typeof value === 'string') {
+      try {
+        const parsed = JSON.parse(value);
+        if (Array.isArray(parsed)) {
+          return parsed.map((item) => Number(item));
+        }
+      } catch {
+        return value
+          .split(',')
+          .map((item) => Number(item.trim()))
+          .filter((item) => Number.isInteger(item));
+      }
+    }
+
+    return value;
+  })
   @IsArray()
   @ArrayNotEmpty()
   @IsInt({ each: true })
   categoryIds!: number[];
+
+  @Transform(({ value }) => {
+    if (Array.isArray(value)) {
+      return value.map((item) => String(item));
+    }
+
+    if (typeof value === 'string') {
+      try {
+        const parsed = JSON.parse(value);
+        if (Array.isArray(parsed)) {
+          return parsed.map((item) => String(item));
+        }
+      } catch {
+        return value
+          .split(',')
+          .map((item) => item.trim())
+          .filter(Boolean);
+      }
+    }
+
+    return value;
+  })
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  @MinLength(3, { each: true })
+  @MaxLength(160, { each: true })
+  galleryAlts?: string[];
 }

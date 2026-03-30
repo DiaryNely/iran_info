@@ -85,9 +85,9 @@ export function AdminCategoriesPage({ onToast }) {
   }
 
   return (
-    <section className="page-grid">
-      <div className="card">
-        <h2>{form.id ? 'Modifier categorie' : 'Nouvelle categorie'}</h2>
+    <section className="page-grid crud-layout">
+      <div className="card crud-form-card">
+        <h2 className="crud-title">{form.id ? 'Modifier categorie' : 'Nouvelle categorie'}</h2>
         <form className="form-grid" onSubmit={handleSubmit}>
           <label>
             Nom
@@ -127,8 +127,8 @@ export function AdminCategoriesPage({ onToast }) {
         </form>
       </div>
 
-      <div className="card">
-        <h2>Categories</h2>
+      <div className="card crud-list-card">
+        <h2 className="crud-title">Categories</h2>
         {loading ? <p>Chargement...</p> : null}
         <div className="table-wrap">
           <table>

@@ -1,11 +1,17 @@
 import { ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
+import { mkdirSync } from 'fs';
+import { join } from 'path';
+import { static as serveStatic } from 'express';
 import { AppModule } from './app.module';
 import { HttpExceptionFilter } from './shared/filters/http-exception.filter';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   const port = Number(process.env.PORT ?? 3000);
+  const uploadsRoot = join(process.cwd(), 'uploads');
+  const articleUploads = join(uploadsRoot, 'articles');
+  mkdirSync(articleUploads, { recursive: true });
   const configuredOrigins = (process.env.CORS_ORIGIN ?? '')
     .split(',')
     .map((origin) => origin.trim())
@@ -26,6 +32,7 @@ async function bootstrap() {
     origin: allowedOrigins,
     credentials: true,
   });
+  app.use('/uploads', serveStatic(uploadsRoot));
 
   await app.listen(port);
   console.log(`Backend running on http://localhost:${port}/api`);
