@@ -41,7 +41,6 @@
         </nav>
 
         <div class="news-header-actions">
-          <a href="HomeFrontPage.jsp" class="news-subscribe-btn">S'abonner</a>
           <a href="<%= request.getContextPath() %>/backoffice/login" class="news-admin-link">Admin</a>
         </div>
       </div>
@@ -183,7 +182,6 @@
       function renderArticle() {
         var article = state.article;
         var categories = Array.isArray(article.categories) ? article.categories : [];
-        var relatedArticles = getRelatedArticles(article, state.allArticles, categories);
         var summary = article.metaDescription || ((article.content || '').slice(0, 220) + '...');
         var paragraphs = getParagraphs(article.content);
 
@@ -216,20 +214,6 @@
             '</section>';
         }
 
-        var relatedHtml = '';
-        if (relatedArticles.length === 0) {
-          relatedHtml = '<p>Pas encore d\'articles lies.</p>';
-        } else {
-          relatedHtml = relatedArticles.map(function (relatedArticle) {
-            return (
-              '<article class="news-popular-item">' +
-              '<h3><a href="ArticleFrontPage.jsp?slug=' + encodeURIComponent(relatedArticle.slug) + '">' + escapeHtml(relatedArticle.title) + '</a></h3>' +
-              '<p>' + escapeHtml(toShortDate(relatedArticle.createdAt)) + '</p>' +
-              '</article>'
-            );
-          }).join('');
-        }
-
         var authorName = (article.author && article.author.username) || 'Redaction';
         var categoryName = categories.length > 0 ? categories[0].name : 'Actualite';
         var categoryLabel = categories.length > 0 ? categories[0].name.toUpperCase() : 'INTERNATIONAL';
@@ -250,7 +234,7 @@
           quoteHtml +
           '</section>' +
           '</article>' +
-          '<aside class="news-sidebar" aria-label="Contexte et lectures associees">' +
+            '<aside class="news-sidebar" aria-label="Contexte">' +
           '<section class="news-sidebar-block" aria-labelledby="context-title">' +
           '<h2 id="context-title">Contexte</h2>' +
           '<ul class="news-context-list">' +
@@ -260,10 +244,6 @@
           '</ul>' +
           '</section>' +
           imageInfo +
-          '<section class="news-sidebar-block" aria-labelledby="related-title">' +
-          '<h2 id="related-title">A lire aussi</h2>' +
-          '<div class="news-popular-list">' + relatedHtml + '</div>' +
-          '</section>' +
           '<a href="HomeFrontPage.jsp" class="news-all-articles-btn">Voir tous les articles</a>' +
           '</aside>' +
           '</div>';

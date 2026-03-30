@@ -96,21 +96,6 @@ body {
   gap: 0.65rem;
 }
 
-.news-subscribe-btn {
-  text-decoration: none;
-  background: #f7c400;
-  color: #111417;
-  font-weight: 700;
-  border-radius: 8px;
-  padding: 0.5rem 0.9rem;
-  transition: transform 160ms ease, filter 160ms ease;
-}
-
-.news-subscribe-btn:hover {
-  filter: brightness(0.97);
-  transform: translateY(-1px);
-}
-
 .news-admin-link {
   text-decoration: none;
   color: #9db0cc;
@@ -595,10 +580,6 @@ body {
 
   .news-header-actions {
     justify-content: space-between;
-  }
-
-  .news-subscribe-btn {
-    padding-inline: 0.7rem;
   }
 
   .news-card-image-large {
