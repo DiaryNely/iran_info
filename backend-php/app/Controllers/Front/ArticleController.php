@@ -42,6 +42,8 @@ final class ArticleController
         }
 
         try {
+            $appConfig = require dirname(__DIR__, 3) . '/config/app.php';
+            $baseUrl = rtrim((string) ($appConfig['base_url'] ?? ''), '/');
             $article = $this->repo()->findPublishedBySlug($slug);
             if ($article === null) {
                 http_response_code(404);
@@ -50,11 +52,14 @@ final class ArticleController
             }
 
             $categories = $this->categoryRepo()->findAll();
+            $canonicalUrl = $baseUrl . '/article/' . rawurlencode((string) ($article['slug'] ?? $slug));
 
             view('front.article', [
                 'title' => ($article['metaTitle'] ?: $article['title']) . ' | Iran Info',
                 'article' => $article,
                 'categories' => $categories,
+                'baseUrl' => $baseUrl,
+                'canonicalUrl' => $canonicalUrl,
             ]);
         } catch (Throwable $e) {
             http_response_code(500);
