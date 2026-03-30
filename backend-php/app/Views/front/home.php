@@ -388,15 +388,7 @@
           return articleUniqueKey(item) !== leadKey;
         })
         .slice(0, 6);
-      var usedKeys = new Set([leadKey]);
-
-      highlights.forEach(function (item) {
-        usedKeys.add(articleUniqueKey(item));
-      });
-
-      var cleanedPopular = uniqueArticles(popularArticles).filter(function (item) {
-        return !usedKeys.has(articleUniqueKey(item));
-      });
+      var cleanedPopular = uniqueArticles(popularArticles);
 
       var popularHtml = cleanedPopular.map(function (item, index) {
         return popularItemHtml(item, index);
@@ -468,7 +460,7 @@
         sideArticles = filteredArticles;
       }
 
-      var popularArticles = sideArticles.slice(0, 12);
+      var popularArticles = sideArticles;
       var feedList = document.getElementById('news-feed-list');
       var emptyMessage = document.getElementById('emptyMessage');
 
