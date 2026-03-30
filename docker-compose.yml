@@ -17,22 +17,25 @@ services:
 
   backend:
     build:
-      context: ./backend
+      context: ./backend-java
       dockerfile: Dockerfile
     container_name: iran-info-backend
     env_file:
       - ./.env
     environment:
-      PORT: ${BACKEND_PORT}
       DATABASE_HOST: db
       DATABASE_PORT: 5432
       DATABASE_USER: ${POSTGRES_USER}
       DATABASE_PASSWORD: ${POSTGRES_PASSWORD}
       DATABASE_NAME: ${POSTGRES_DB}
+      JWT_SECRET: ${JWT_SECRET:-change-me-in-production}
+      JWT_EXPIRES_IN_SECONDS: ${JWT_EXPIRES_IN_SECONDS:-86400}
+      UPLOADS_DIR: /app/uploads/articles
+      CORS_ORIGIN: "http://localhost:${FRONTOFFICE_PORT},http://localhost:${BACKOFFICE_PORT:-5174}"
     ports:
-      - "${BACKEND_PORT}:3000"
+      - "${BACKEND_PORT}:8080"
     volumes:
-      - ./backend/uploads:/app/uploads
+      - ./backend-java/uploads:/app/uploads
     depends_on:
       - db
     restart: unless-stopped

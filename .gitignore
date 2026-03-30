@@ -3,4 +3,5 @@ dist/
 coverage/
 *.log
 docs/
-backend/uploads/
+backend-java/uploads/
+backend-java/target/
