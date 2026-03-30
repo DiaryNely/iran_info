@@ -164,7 +164,13 @@ final class ArticleController
                 $_SESSION['flash'] = ['type' => 'success', 'message' => 'Article cree.'];
             }
         } catch (Throwable $e) {
-            $_SESSION['flash'] = ['type' => 'error', 'message' => 'Erreur lors de la sauvegarde article.'];
+            error_log('Article save failed: ' . $e->getMessage());
+            $message = 'Erreur lors de la sauvegarde article.';
+            $debug = (getenv('APP_DEBUG') ?: '1') === '1';
+            if ($debug) {
+                $message .= ' Details: ' . $e->getMessage();
+            }
+            $_SESSION['flash'] = ['type' => 'error', 'message' => $message];
             header('Location: /backoffice/articles' . ($id > 0 ? ('?edit=' . $id) : ''), true, 302);
             return;
         }
@@ -217,16 +223,16 @@ final class ArticleController
             $base = $title . ' | Iran Info actualites internationales';
         }
 
-        if (strlen($base) > 60) {
-            $base = substr($base, 0, 60);
+        if ($this->textLength($base) > 60) {
+            $base = $this->textSlice($base, 60);
         }
 
-        while (strlen($base) < 50) {
+        while ($this->textLength($base) < 50) {
             $base .= ' news';
         }
 
-        if (strlen($base) > 60) {
-            $base = substr($base, 0, 60);
+        if ($this->textLength($base) > 60) {
+            $base = $this->textSlice($base, 60);
         }
 
         return trim($base);
@@ -240,19 +246,37 @@ final class ArticleController
             $base = $clean !== '' ? $clean : 'Analyse et actualites sur l Iran et l international.';
         }
 
-        if (strlen($base) > 160) {
-            $base = substr($base, 0, 160);
+        if ($this->textLength($base) > 160) {
+            $base = $this->textSlice($base, 160);
         }
 
-        while (strlen($base) < 150) {
+        while ($this->textLength($base) < 150) {
             $base .= ' Actualites, analyse et contexte editorial.';
-            if (strlen($base) > 160) {
-                $base = substr($base, 0, 160);
+            if ($this->textLength($base) > 160) {
+                $base = $this->textSlice($base, 160);
                 break;
             }
         }
 
         return trim($base);
+    }
+
+    private function textLength(string $value): int
+    {
+        if (function_exists('mb_strlen')) {
+            return mb_strlen($value, 'UTF-8');
+        }
+
+        return strlen($value);
+    }
+
+    private function textSlice(string $value, int $maxChars): string
+    {
+        if (function_exists('mb_substr')) {
+            return mb_substr($value, 0, $maxChars, 'UTF-8');
+        }
+
+        return substr($value, 0, $maxChars);
     }
 
     private function saveUploadedImage(string $field): ?string

@@ -86,11 +86,43 @@ final class ArticleController
                 return count(array_intersect($currentCategoryIds, $itemCategoryIds));
             };
 
-            usort($others, static function (array $a, array $b) use ($scoreRelated): int {
+            $hasImage = static function (array $item): bool {
+                $cover = trim((string) ($item['coverImagePath'] ?? ''));
+                if ($cover !== '') {
+                    return true;
+                }
+
+                $gallery = $item['galleryImages'] ?? null;
+                if (!is_array($gallery) || count($gallery) === 0) {
+                    return false;
+                }
+
+                foreach ($gallery as $image) {
+                    if (is_array($image) && trim((string) ($image['path'] ?? '')) !== '') {
+                        return true;
+                    }
+                }
+
+                return false;
+            };
+
+            usort($others, static function (array $a, array $b) use ($scoreRelated, $hasImage): int {
                 $scoreA = $scoreRelated($a);
                 $scoreB = $scoreRelated($b);
                 if ($scoreA !== $scoreB) {
                     return $scoreB <=> $scoreA;
+                }
+
+                $featuredA = !empty($a['featured']) ? 1 : 0;
+                $featuredB = !empty($b['featured']) ? 1 : 0;
+                if ($featuredA !== $featuredB) {
+                    return $featuredB <=> $featuredA;
+                }
+
+                $imageA = $hasImage($a) ? 1 : 0;
+                $imageB = $hasImage($b) ? 1 : 0;
+                if ($imageA !== $imageB) {
+                    return $imageB <=> $imageA;
                 }
 
                 $timeA = strtotime((string) ($a['createdAt'] ?? '')) ?: 0;
@@ -98,7 +130,7 @@ final class ArticleController
                 return $timeB <=> $timeA;
             });
 
-            $featuredArticle = $others[0] ?? null;
+            $featuredArticle = $others[0] ?? $article;
             $readAlsoArticles = [];
             foreach ($others as $item) {
                 if ($featuredArticle !== null && (int) ($item['id'] ?? 0) === (int) ($featuredArticle['id'] ?? 0)) {

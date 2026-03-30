@@ -176,10 +176,37 @@
         .filter(Boolean);
     }
 
+    function parsePostgresDate(value) {
+      if (!value) return null;
+
+      var raw = String(value).trim();
+      if (!raw) return null;
+
+      var normalized = raw.replace(' ', 'T');
+      normalized = normalized.replace(/\.(\d{3})\d+/, '.$1');
+      normalized = normalized.replace(/([+-]\d{2})$/, '$1:00');
+
+      var date = new Date(normalized);
+      if (!Number.isNaN(date.getTime())) {
+        return date;
+      }
+
+      date = new Date(raw);
+      if (!Number.isNaN(date.getTime())) {
+        return date;
+      }
+
+      return null;
+    }
+
+    function articleDateValue(article) {
+      if (!article) return '';
+      return article.publishedAt || article.createdAt || article.updatedAt || '';
+    }
+
     function toShortDate(value) {
-      if (!value) return 'Date inconnue';
-      var date = new Date(value);
-      if (Number.isNaN(date.getTime())) return 'Date inconnue';
+      var date = parsePostgresDate(value);
+      if (!date) return 'Date inconnue';
       return new Intl.DateTimeFormat('fr-FR', { dateStyle: 'medium' }).format(date);
     }
 
@@ -288,10 +315,11 @@
         })
         .filter(function (article) {
           if (!state.selectedDate) return true;
-          if (!article.createdAt) return false;
+          var baseDate = articleDateValue(article);
+          if (!baseDate) return false;
 
-          var articleDate = new Date(article.createdAt);
-          if (Number.isNaN(articleDate.getTime())) return false;
+          var articleDate = parsePostgresDate(baseDate);
+          if (!articleDate) return false;
 
           var yyyy = articleDate.getFullYear();
           var mm = String(articleDate.getMonth() + 1).padStart(2, '0');
@@ -299,8 +327,16 @@
           return yyyy + '-' + mm + '-' + dd === state.selectedDate;
         })
         .sort(function (a, b) {
-          var left = new Date(a.createdAt || 0).getTime();
-          var right = new Date(b.createdAt || 0).getTime();
+          var leftFeatured = a && a.featured ? 1 : 0;
+          var rightFeatured = b && b.featured ? 1 : 0;
+          if (leftFeatured !== rightFeatured) {
+            return rightFeatured - leftFeatured;
+          }
+
+          var leftDate = parsePostgresDate(articleDateValue(a));
+          var rightDate = parsePostgresDate(articleDateValue(b));
+          var left = leftDate ? leftDate.getTime() : 0;
+          var right = rightDate ? rightDate.getTime() : 0;
           return state.sortOrder === 'oldest' ? left - right : right - left;
         });
     }
@@ -323,7 +359,7 @@
         '<p class="news-card-kicker">' + escapeHtml(readCategory(article)) + '</p>' +
         '<h3 class="news-card-title"><a href="/article/' + encodeURIComponent(article.slug) + '">' + escapeHtml(article.title) + '</a></h3>' +
         '<p class="news-card-summary-large">' + escapeHtml(summary) + '</p>' +
-        '<p class="news-card-date">' + escapeHtml(toShortDate(article.createdAt)) + '</p>' +
+        '<p class="news-card-date">' + escapeHtml(toShortDate(articleDateValue(article))) + '</p>' +
         '</article>'
       );
     }
@@ -332,7 +368,7 @@
       return (
         '<article class="news-popular-item">' +
         '<h3><a href="/article/' + encodeURIComponent(article.slug) + '">' + escapeHtml(article.title) + '</a></h3>' +
-        '<p>' + escapeHtml(toShortDate(article.createdAt)) + '</p>' +
+        '<p>' + escapeHtml(toShortDate(articleDateValue(article))) + '</p>' +
         '</article>'
       );
     }
@@ -341,9 +377,14 @@
       if (articles.length === 0) return '';
 
       var lead = articles[0];
-      var highlights = uniqueArticles(articles.slice(1, 5));
+      var highlights = uniqueArticles(articles).slice(0, 8);
+      var usedKeys = new Set([articleUniqueKey(lead)]);
 
-      var popularHtml = popularArticles.map(popularItemHtml).join('');
+      var cleanedPopular = uniqueArticles(popularArticles).filter(function (item) {
+        return !usedKeys.has(articleUniqueKey(item));
+      });
+
+      var popularHtml = cleanedPopular.map(popularItemHtml).join('');
       var leadSummary = lead.metaDescription || ((lead.content || '').slice(0, 240) + '...');
       var leadImage = getFeaturedImageUrl(lead);
       var leadImageHtml = leadImage
@@ -363,7 +404,7 @@
           '<div class="news-highlight-copy">' +
           '<p class="news-card-kicker">' + escapeHtml(readCategory(item)) + '</p>' +
           '<h3>' + escapeHtml(item.title) + '</h3>' +
-          '<p class="news-card-date">' + escapeHtml(toShortDate(item.createdAt)) + '</p>' +
+          '<p class="news-card-date">' + escapeHtml(toShortDate(articleDateValue(item))) + '</p>' +
           '</div>' +
           '</a>' +
           '</article>'
@@ -383,7 +424,7 @@
         '<div class="news-highlights-list">' + highlightsHtml + '</div>' +
         '<section class="news-sidebar-block news-inline-side-block" aria-labelledby="popular-title">' +
         '<h4 id="popular-title">Articles populaires</h4>' +
-        '<div class="news-popular-list">' + popularHtml + '</div>' +
+        '<div class="news-popular-list">' + (popularHtml || '<p>Aucun autre article populaire.</p>') + '</div>' +
         '</section>' +
         '<section class="news-sidebar-block news-inline-side-block" aria-labelledby="newsletter-title">' +
         '<h4 id="newsletter-title">Newsletter</h4>' +
@@ -396,8 +437,8 @@
 
     function render() {
       var filteredArticles = uniqueArticles(getFilteredArticles());
-      var popularArticles = filteredArticles.slice(0, 5);
-      var remainingArticles = filteredArticles.slice(5);
+      var popularArticles = filteredArticles.slice(0, 8);
+      var remainingArticles = filteredArticles;
       var feedList = document.getElementById('news-feed-list');
       var emptyMessage = document.getElementById('emptyMessage');
 

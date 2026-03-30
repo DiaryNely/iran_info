@@ -95,6 +95,44 @@
 
       return $baseUrl . (str_starts_with($path, '/') ? $path : ('/' . $path));
     };
+  $resolveFeaturedImagePath = static function (array $item): string {
+    $gallery = is_array($item['galleryImages'] ?? null) ? $item['galleryImages'] : [];
+    foreach ($gallery as $img) {
+      if (!is_array($img)) {
+        continue;
+      }
+      $alt = strtolower(trim((string) ($img['alt'] ?? '')));
+      $path = trim((string) ($img['path'] ?? ''));
+      if ($path === '') {
+        continue;
+      }
+      if (
+        str_contains($alt, 'a la une') ||
+        str_contains($alt, 'alaune') ||
+        str_contains($alt, 'featured') ||
+        str_contains($alt, 'une')
+      ) {
+        return $path;
+      }
+    }
+
+    $cover = trim((string) ($item['coverImagePath'] ?? ''));
+    if ($cover !== '') {
+      return $cover;
+    }
+
+    foreach ($gallery as $img) {
+      if (!is_array($img)) {
+        continue;
+      }
+      $path = trim((string) ($img['path'] ?? ''));
+      if ($path !== '') {
+        return $path;
+      }
+    }
+
+    return '';
+  };
   ?>
 
 <div class="news-shell">
@@ -153,7 +191,7 @@
           <?php
             $featuredTitle = (string) ($featuredArticle['title'] ?? 'Article');
             $featuredSlug = (string) ($featuredArticle['slug'] ?? '');
-            $featuredCover = (string) ($featuredArticle['coverImagePath'] ?? '');
+            $featuredCover = $resolveFeaturedImagePath($featuredArticle);
             $featuredImage = $toMediaUrl($featuredCover);
             $featuredCategory = 'Actualite';
             if (is_array($featuredArticle['categories'] ?? null) && count($featuredArticle['categories']) > 0) {
@@ -166,6 +204,8 @@
               <a href="/article/<?= rawurlencode($featuredSlug) ?>" class="news-side-featured-link">
                 <?php if ($featuredImage !== ''): ?>
                   <img src="<?= htmlspecialchars($featuredImage, ENT_QUOTES, 'UTF-8') ?>" alt="<?= htmlspecialchars($featuredTitle, ENT_QUOTES, 'UTF-8') ?>" class="news-side-featured-image" loading="lazy" decoding="async">
+                <?php else: ?>
+                  <div class="news-side-featured-image news-image-fallback">Image indisponible</div>
                 <?php endif; ?>
                 <p class="news-card-kicker"><?= htmlspecialchars($featuredCategory, ENT_QUOTES, 'UTF-8') ?></p>
                 <h3><?= htmlspecialchars($featuredTitle, ENT_QUOTES, 'UTF-8') ?></h3>
@@ -174,15 +214,15 @@
           </section>
         <?php endif; ?>
 
-        <?php if (count($readAlsoArticles) > 0): ?>
-          <section class="news-sidebar-block" aria-labelledby="read-also-title">
-            <h2 id="read-also-title">A lire aussi</h2>
+        <section class="news-sidebar-block" aria-labelledby="read-also-title">
+          <h2 id="read-also-title">A lire aussi</h2>
+          <?php if (count($readAlsoArticles) > 0): ?>
             <div class="news-readalso-list">
               <?php foreach ($readAlsoArticles as $item): ?>
                 <?php
                   $itemTitle = (string) ($item['title'] ?? 'Article');
                   $itemSlug = (string) ($item['slug'] ?? '');
-                  $itemCover = $toMediaUrl((string) ($item['coverImagePath'] ?? ''));
+                  $itemCover = $toMediaUrl($resolveFeaturedImagePath($item));
                   $itemCategory = 'Actualite';
                   if (is_array($item['categories'] ?? null) && count($item['categories']) > 0) {
                       $itemCategory = (string) (($item['categories'][0]['name'] ?? 'Actualite'));
@@ -201,8 +241,10 @@
                 </article>
               <?php endforeach; ?>
             </div>
-          </section>
-        <?php endif; ?>
+          <?php else: ?>
+            <p>Aucun autre article disponible pour le moment.</p>
+          <?php endif; ?>
+        </section>
 
         <section class="news-sidebar-block" aria-labelledby="context-title">
           <h2 id="context-title">Contexte</h2>
