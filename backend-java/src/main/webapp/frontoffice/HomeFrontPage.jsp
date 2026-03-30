@@ -222,6 +222,12 @@
         var path = article && article.coverImagePath;
         if (!path) return '';
 
+        return getMediaUrl(path, width);
+      }
+
+      function getMediaUrl(path, width) {
+        if (!path) return '';
+
         if (path.indexOf('http://') === 0 || path.indexOf('https://') === 0) {
           return SeoTools.optimizeImageUrl(path, width);
         }
@@ -238,6 +244,23 @@
 
         var lead = articles[0];
         var highlights = articles.slice(1, 5);
+        var leadGallery = Array.isArray(lead.galleryImages) ? lead.galleryImages : [];
+
+        if (highlights.length === 0 && leadGallery.length > 0) {
+          highlights = leadGallery.slice(0, 4).map(function (image, index) {
+            return {
+              __fromGallery: true,
+              id: 'gallery-' + index,
+              slug: lead.slug,
+              title: lead.title,
+              createdAt: lead.createdAt,
+              categoryName: readCategory(lead),
+              coverImageAlt: image.alt || lead.coverImageAlt || lead.title,
+              imagePath: image.path
+            };
+          });
+        }
+
         var popularHtml = popularArticles.map(popularItemHtml).join('');
         var leadSummary = lead.metaDescription || ((lead.content || '').slice(0, 240) + '...');
         var leadImage = getArticleImageUrl(lead, 1600);
@@ -246,7 +269,9 @@
           : '<div class="news-lead-image news-image-fallback">Image indisponible</div>';
 
         var highlightsHtml = highlights.map(function (item) {
-          var image = getArticleImageUrl(item, 700);
+          var image = item.__fromGallery
+            ? getMediaUrl(item.imagePath, 700)
+            : getArticleImageUrl(item, 700);
           var thumb = image
             ? '<img src="' + image + '" alt="' + escapeHtml(item.coverImageAlt || item.title) + '" class="news-highlight-thumb" loading="lazy" decoding="async" />'
             : '<div class="news-highlight-thumb news-image-fallback">Image</div>';
