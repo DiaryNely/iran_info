@@ -9,9 +9,9 @@
       + request.getContextPath();
   String seoTitle = "Article d actualite | Iran Info";
   String seoDescription = "Analyse detaillee, contexte et lecture complete de l actualite sur Iran Info, avec points cles, reperes et lecture accessible pour tous les publics.";
-  String canonicalUrl = baseUrl + "/frontoffice/ArticleFrontPage.jsp";
+  String canonicalUrl = baseUrl + "/article/";
   if (!slug.isBlank()) {
-    canonicalUrl += "?slug=" + java.net.URLEncoder.encode(slug, "UTF-8");
+    canonicalUrl += java.net.URLEncoder.encode(slug, "UTF-8");
   }
 %>
 <!DOCTYPE html>
@@ -34,10 +34,10 @@
   <div class="news-shell">
     <header class="news-header">
       <div class="news-header-inner">
-        <a href="HomeFrontPage.jsp" class="news-logo" aria-label="Aller a l'accueil Iran Info">IRAN INFO</a>
+        <a href="<%= request.getContextPath() %>/" class="news-logo" aria-label="Aller a l'accueil Iran Info">IRAN INFO</a>
 
         <nav class="news-nav" aria-label="Navigation principale">
-          <a href="HomeFrontPage.jsp" class="news-nav-link">Accueil</a>
+          <a href="<%= request.getContextPath() %>/" class="news-nav-link">Accueil</a>
         </nav>
 
         <div class="news-header-actions">
@@ -165,18 +165,18 @@
 
       function renderLoading() {
         document.getElementById('article-root').innerHTML =
-          '<main class="news-main"><p>Chargement de l\'article...</p></main>';
+          '<section class="news-empty-state">'
+          + '<p>Chargement de l\'article...</p>'
+          + '</section>';
       }
 
       function renderNotFound() {
         document.getElementById('article-root').innerHTML =
-          '<main class="news-main">' +
           '<section class="news-empty-state">' +
           '<h1>Article introuvable</h1>' +
           '<p>L\'URL demandee ne correspond a aucun contenu.</p>' +
-          '<a href="HomeFrontPage.jsp" class="news-link-inline">Retour a l\'accueil</a>' +
-          '</section>' +
-          '</main>';
+          '<a href="<%= request.getContextPath() %>/" class="news-link-inline">Retour a l\'accueil</a>' +
+          '</section>';
       }
 
       function renderArticle() {
@@ -244,7 +244,7 @@
           '</ul>' +
           '</section>' +
           imageInfo +
-          '<a href="HomeFrontPage.jsp" class="news-all-articles-btn">Voir tous les articles</a>' +
+          '<a href="<%= request.getContextPath() %>/" class="news-all-articles-btn">Voir tous les articles</a>' +
           '</aside>' +
           '</div>';
       }
@@ -261,25 +261,26 @@
         renderLoading();
 
         try {
-          var responses = await Promise.all([
-            fetch(API_BASE + '/article/' + encodeURIComponent(slug)),
-            fetch(API_BASE + '/articles')
-          ]);
-
-          var articleResponse = responses[0];
-          var allArticlesResponse = responses[1];
+          var articleResponse = await fetch(API_BASE + '/article/' + encodeURIComponent(slug));
 
           if (!articleResponse.ok) {
             throw new Error('Article introuvable');
           }
 
-          var payloads = await Promise.all([
-            articleResponse.json(),
-            allArticlesResponse.json()
-          ]);
+          state.article = await articleResponse.json();
 
-          state.article = payloads[0];
-          state.allArticles = Array.isArray(payloads[1]) ? payloads[1] : [];
+          try {
+            var allArticlesResponse = await fetch(API_BASE + '/articles');
+            if (allArticlesResponse.ok) {
+              var allArticlesPayload = await allArticlesResponse.json();
+              state.allArticles = Array.isArray(allArticlesPayload) ? allArticlesPayload : [];
+            } else {
+              state.allArticles = [];
+            }
+          } catch (secondaryError) {
+            state.allArticles = [];
+          }
+
           state.loading = false;
           setSeo(state.article);
           renderArticle();

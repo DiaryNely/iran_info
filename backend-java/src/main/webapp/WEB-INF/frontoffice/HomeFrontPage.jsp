@@ -5,7 +5,7 @@
       + request.getContextPath();
   String seoTitle = "Actualites Iran et international en continu | Iran Info";
   String seoDescription = "Suivez les actualites sur l Iran et l international avec analyses, contexte, reportages et dossiers de reference, mis a jour chaque jour par notre redaction.";
-  String canonicalUrl = baseUrl + "/frontoffice/HomeFrontPage.jsp";
+  String canonicalUrl = baseUrl + "/";
 %>
 <!DOCTYPE html>
 <html lang="fr">
@@ -27,10 +27,10 @@
   <div class="news-shell">
     <header class="news-header">
       <div class="news-header-inner">
-        <a href="HomeFrontPage.jsp" class="news-logo" aria-label="Aller a l'accueil Iran Info">IRAN INFO</a>
+        <a href="<%= request.getContextPath() %>/" class="news-logo" aria-label="Aller a l'accueil Iran Info">IRAN INFO</a>
 
         <nav class="news-nav" aria-label="Navigation principale">
-          <a href="HomeFrontPage.jsp" class="news-nav-link active">Accueil</a>
+          <a href="<%= request.getContextPath() %>/" class="news-nav-link active">Accueil</a>
         </nav>
 
         <div class="news-header-actions">
@@ -192,7 +192,7 @@
 
         if (imageUrl) {
           imageHtml =
-            '<a href="ArticleFrontPage.jsp?slug=' + encodeURIComponent(article.slug) + '" aria-label="Ouvrir ' + escapeHtml(article.title) + '" class="news-card-image-link-large">' +
+            '<a href="<%= request.getContextPath() %>/article/' + encodeURIComponent(article.slug) + '" aria-label="Ouvrir ' + escapeHtml(article.title) + '" class="news-card-image-link-large">' +
             '<img src="' + imageUrl + '" alt="' + escapeHtml(article.coverImageAlt || article.title) + '" class="news-card-image news-card-image-large" loading="lazy" decoding="async" />' +
             '</a>';
         }
@@ -201,7 +201,7 @@
           '<article class="news-article-card news-article-card-large">' +
           imageHtml +
           '<p class="news-card-kicker">' + escapeHtml(readCategory(article)) + '</p>' +
-          '<h3 class="news-card-title"><a href="ArticleFrontPage.jsp?slug=' + encodeURIComponent(article.slug) + '">' + escapeHtml(article.title) + '</a></h3>' +
+          '<h3 class="news-card-title"><a href="<%= request.getContextPath() %>/article/' + encodeURIComponent(article.slug) + '">' + escapeHtml(article.title) + '</a></h3>' +
           '<p class="news-card-summary-large">' + escapeHtml(summary) + '</p>' +
           '<p class="news-card-date">' + escapeHtml(toShortDate(article.createdAt)) + '</p>' +
           '</article>'
@@ -211,7 +211,7 @@
       function popularItemHtml(article) {
         return (
           '<article class="news-popular-item">' +
-          '<h3><a href="ArticleFrontPage.jsp?slug=' + encodeURIComponent(article.slug) + '">' + escapeHtml(article.title) + '</a></h3>' +
+          '<h3><a href="<%= request.getContextPath() %>/article/' + encodeURIComponent(article.slug) + '">' + escapeHtml(article.title) + '</a></h3>' +
           '<p>' + escapeHtml(toShortDate(article.createdAt)) + '</p>' +
           '</article>'
         );
@@ -277,7 +277,7 @@
 
           return (
             '<article class="news-highlight-item">' +
-            '<a href="ArticleFrontPage.jsp?slug=' + encodeURIComponent(item.slug) + '" class="news-highlight-link">' +
+            '<a href="<%= request.getContextPath() %>/article/' + encodeURIComponent(item.slug) + '" class="news-highlight-link">' +
             thumb +
             '<div class="news-highlight-copy">' +
             '<p class="news-card-kicker">' + escapeHtml(readCategory(item)) + '</p>' +
@@ -292,9 +292,9 @@
         return (
           '<section class="news-featured-block" aria-label="Image principale et a la une">' +
           '<article class="news-lead-card">' +
-          '<a href="ArticleFrontPage.jsp?slug=' + encodeURIComponent(lead.slug) + '" class="news-lead-image-link">' + leadImageHtml + '</a>' +
+          '<a href="<%= request.getContextPath() %>/article/' + encodeURIComponent(lead.slug) + '" class="news-lead-image-link">' + leadImageHtml + '</a>' +
           '<p class="news-card-kicker">Image principale</p>' +
-          '<h3 class="news-lead-title"><a href="ArticleFrontPage.jsp?slug=' + encodeURIComponent(lead.slug) + '">' + escapeHtml(lead.title) + '</a></h3>' +
+          '<h3 class="news-lead-title"><a href="<%= request.getContextPath() %>/article/' + encodeURIComponent(lead.slug) + '">' + escapeHtml(lead.title) + '</a></h3>' +
           '<p class="news-card-summary-large">' + escapeHtml(leadSummary) + '</p>' +
           '</article>' +
           '<aside class="news-highlights">' +

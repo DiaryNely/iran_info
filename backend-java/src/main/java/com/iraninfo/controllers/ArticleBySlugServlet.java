@@ -1,12 +1,14 @@
 package com.iraninfo.controllers;
 
+import java.io.IOException;
+
 import com.iraninfo.services.ArticleService;
 import com.iraninfo.utils.ResponseUtil;
+
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import java.io.IOException;
 
 @WebServlet("/api/article/*")
 public class ArticleBySlugServlet extends HttpServlet {

@@ -6,6 +6,6 @@
   } else if ("api".equalsIgnoreCase(appEntry)) {
     response.sendRedirect(request.getContextPath() + "/api/health");
   } else {
-    response.sendRedirect(request.getContextPath() + "/frontoffice/HomeFrontPage.jsp");
+    request.getRequestDispatcher("/WEB-INF/frontoffice/HomeFrontPage.jsp").forward(request, response);
   }
 %>

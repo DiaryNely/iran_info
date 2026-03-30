@@ -1,12 +1,13 @@
 package com.iraninfo.services;
 
-import com.iraninfo.dao.CategoryDao;
-import com.iraninfo.models.Category;
-
 import java.sql.SQLException;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+
+import com.iraninfo.dao.CategoryDao;
+import com.iraninfo.models.Category;
+import com.iraninfo.utils.SlugUtil;
 
 public class CategoryService {
 
@@ -18,6 +19,14 @@ public class CategoryService {
 
     public Category findOneBySlug(String slug) throws SQLException {
         Category category = categoryDao.findBySlug(slug);
+        if (category == null) {
+            throw new IllegalStateException("Category not found");
+        }
+        return category;
+    }
+
+    public Category findOneById(long id) throws SQLException {
+        Category category = categoryDao.findById(id);
         if (category == null) {
             throw new IllegalStateException("Category not found");
         }
@@ -37,6 +46,11 @@ public class CategoryService {
 
     public Category create(String name, String slug, String description, String metaTitle, String metaDescription)
             throws SQLException {
+        slug = normalizeOrGenerateSlug(slug, name);
+        if (slug.isEmpty()) {
+            throw new IllegalArgumentException("Category slug is required");
+        }
+
         Category existing = categoryDao.findBySlug(slug);
         if (existing != null) {
             throw new IllegalArgumentException("Category slug already exists");
@@ -52,10 +66,17 @@ public class CategoryService {
     }
 
     public Category update(long id, String name, String slug, String description,
-                           String metaTitle, String metaDescription) throws SQLException {
+            String metaTitle, String metaDescription) throws SQLException {
         Category category = categoryDao.findById(id);
         if (category == null) {
             throw new IllegalStateException("Category not found");
+        }
+
+        if (slug != null) {
+            slug = normalizeOrGenerateSlug(slug, name != null ? name : category.getName());
+            if (slug.isEmpty()) {
+                throw new IllegalArgumentException("Category slug is required");
+            }
         }
 
         if (slug != null && !slug.equals(category.getSlug())) {
@@ -83,5 +104,11 @@ public class CategoryService {
         Map<String, Object> result = new LinkedHashMap<>();
         result.put("message", "Category deleted");
         return result;
+    }
+
+    private String normalizeOrGenerateSlug(String providedSlug, String name) {
+        return providedSlug != null && !providedSlug.trim().isEmpty()
+                ? SlugUtil.toSlug(providedSlug)
+                : SlugUtil.toSlug(name);
     }
 }

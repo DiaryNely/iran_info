@@ -1,15 +1,17 @@
 package com.iraninfo.controllers;
 
+import java.io.IOException;
+import java.util.Map;
+
 import com.iraninfo.services.CategoryService;
 import com.iraninfo.utils.JsonUtil;
 import com.iraninfo.utils.RequestUtil;
 import com.iraninfo.utils.ResponseUtil;
+
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import java.io.IOException;
-import java.util.Map;
 
 @WebServlet("/api/categories/*")
 public class CategoryServlet extends HttpServlet {
@@ -67,7 +69,7 @@ public class CategoryServlet extends HttpServlet {
         if (name == null || name.length() < 2) {
             throw new IllegalArgumentException("Name is required (min 2 chars)");
         }
-        if (slug == null || slug.length() < 2) {
+        if (slug != null && !slug.isBlank() && slug.length() < 2) {
             throw new IllegalArgumentException("Slug is required (min 2 chars)");
         }
 

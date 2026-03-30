@@ -47,6 +47,7 @@
                 <label>Image principale
                     <input id="article-cover" type="file" accept="image/*" />
                 </label>
+                <div id="cover-preview-wrap" class="upload-preview-grid"></div>
 
                 <label>Alt image principale
                     <input id="article-cover-alt" required minlength="3" maxlength="160" />
@@ -55,6 +56,7 @@
                 <label>Galerie (multi)
                     <input id="article-gallery" type="file" accept="image/*" multiple />
                 </label>
+                <div id="gallery-preview-wrap" class="upload-preview-grid"></div>
 
                 <div id="gallery-alts-wrap" class="form-grid"></div>
 
@@ -62,9 +64,18 @@
                     <textarea id="article-content" rows="7" required minlength="30"></textarea>
                 </label>
 
-                <div>
-                    <p>Categories</p>
-                    <div id="categories-chips" class="chips"></div>
+                <div class="category-picker">
+                  <div class="category-picker-head">
+                    <p>Categories <span id="categories-selected-count" class="category-count">(0 selectionnee)</span></p>
+                    <div class="category-picker-actions">
+                      <button id="cat-select-all" class="btn btn-small" type="button">Tout selectionner</button>
+                      <button id="cat-clear-all" class="btn btn-small" type="button">Vider</button>
+                    </div>
+                  </div>
+                  <label class="category-search-label">Rechercher une categorie
+                    <input id="categories-search" type="search" placeholder="Ex: Politique, Economie..." />
+                  </label>
+                  <div id="categories-chips" class="chips category-chips"></div>
                 </div>
 
                 <div class="actions">
@@ -115,13 +126,20 @@
   const coverEl = document.getElementById('article-cover');
   const coverAltEl = document.getElementById('article-cover-alt');
   const galleryEl = document.getElementById('article-gallery');
+  const coverPreviewWrap = document.getElementById('cover-preview-wrap');
+  const galleryPreviewWrap = document.getElementById('gallery-preview-wrap');
   const galleryAltsWrap = document.getElementById('gallery-alts-wrap');
   const chipsEl = document.getElementById('categories-chips');
+  const categoriesSearchEl = document.getElementById('categories-search');
+  const categoriesSelectedCountEl = document.getElementById('categories-selected-count');
+  const selectAllCategoriesBtn = document.getElementById('cat-select-all');
+  const clearAllCategoriesBtn = document.getElementById('cat-clear-all');
   const formTitleEl = document.getElementById('article-form-title');
 
   let categories = [];
   let selectedCategoryIds = [];
   let articlesCache = [];
+  let editingArticle = null;
 
   function toast(message, type = 'success') {
     const host = document.getElementById('bo-toast');
@@ -133,20 +151,88 @@
     return { Authorization: `Bearer ${TOKEN}`, ...extra };
   }
 
+  function getFilteredCategories() {
+    const query = (categoriesSearchEl.value || '').trim().toLowerCase();
+    if (!query) return categories;
+    return categories.filter((cat) => {
+      const name = (cat.name || '').toLowerCase();
+      const slug = (cat.slug || '').toLowerCase();
+      return name.includes(query) || slug.includes(query);
+    });
+  }
+
+  function updateCategoryCounter() {
+    const selected = selectedCategoryIds.length;
+    categoriesSelectedCountEl.textContent = `(${selected} selectionnee${selected > 1 ? 's' : ''})`;
+  }
+
   function renderCategoryChips() {
-    chipsEl.innerHTML = categories.map((cat) => {
+    const visibleCategories = getFilteredCategories();
+    if (visibleCategories.length === 0) {
+      chipsEl.innerHTML = '<p class="category-empty">Aucune categorie correspondante.</p>';
+      updateCategoryCounter();
+      return;
+    }
+
+    chipsEl.innerHTML = visibleCategories.map((cat) => {
       const active = selectedCategoryIds.includes(cat.id) ? 'chip active' : 'chip';
       return `<button type="button" class="${active}" data-cat-id="${cat.id}">${cat.name}</button>`;
     }).join('');
+    updateCategoryCounter();
   }
 
   function resetForm() {
     idEl.value = '';
     selectedCategoryIds = [];
+    editingArticle = null;
     form.reset();
+    coverPreviewWrap.innerHTML = '';
+    galleryPreviewWrap.innerHTML = '';
     galleryAltsWrap.innerHTML = '';
     formTitleEl.textContent = 'Nouvel article';
     renderCategoryChips();
+  }
+
+  function resolveMediaUrl(path) {
+    if (!path) return '';
+    if (path.startsWith('http://') || path.startsWith('https://')) return path;
+    if (path.startsWith('/')) return `${window.location.origin}<%= request.getContextPath() %>${path}`;
+    return `${window.location.origin}<%= request.getContextPath() %>/${path}`;
+  }
+
+  function renderCoverPreview() {
+    const selectedCover = coverEl.files && coverEl.files[0];
+    if (selectedCover) {
+      const url = URL.createObjectURL(selectedCover);
+      coverPreviewWrap.innerHTML = `
+        <article class="upload-preview-card">
+          <img src="${url}" alt="Preview cover" class="upload-preview-image" />
+          <div class="upload-preview-meta">
+            <strong>${selectedCover.name}</strong>
+            <small>${Math.round(selectedCover.size / 1024)} Ko</small>
+          </div>
+          <button type="button" class="btn btn-small btn-danger" data-action="clear-cover">Annuler selection</button>
+        </article>
+      `;
+      return;
+    }
+
+    if (editingArticle && editingArticle.coverImagePath) {
+      const existing = resolveMediaUrl(editingArticle.coverImagePath);
+      coverPreviewWrap.innerHTML = `
+        <article class="upload-preview-card">
+          <img src="${existing}" alt="Cover actuelle" class="upload-preview-image" />
+          <div class="upload-preview-meta">
+            <strong>Image actuelle</strong>
+            <small>Conservee si aucune nouvelle image n'est choisie</small>
+          </div>
+          <span class="upload-badge">Actuelle</span>
+        </article>
+      `;
+      return;
+    }
+
+    coverPreviewWrap.innerHTML = '';
   }
 
   function renderGalleryAltInputs() {
@@ -158,6 +244,58 @@
     `).join('');
   }
 
+  function renderGalleryPreview() {
+    const files = Array.from(galleryEl.files || []);
+    if (files.length > 0) {
+      galleryPreviewWrap.innerHTML = files.map((file, idx) => {
+        const url = URL.createObjectURL(file);
+        return `
+          <article class="upload-preview-card">
+            <img src="${url}" alt="Preview galerie ${idx + 1}" class="upload-preview-image" />
+            <div class="upload-preview-meta">
+              <strong>${file.name}</strong>
+              <small>${Math.round(file.size / 1024)} Ko</small>
+            </div>
+            <button type="button" class="btn btn-small btn-danger" data-action="remove-gallery-file" data-index="${idx}">Retirer</button>
+          </article>
+        `;
+      }).join('');
+      return;
+    }
+
+    const existing = editingArticle && Array.isArray(editingArticle.galleryImages)
+      ? editingArticle.galleryImages
+      : [];
+
+    if (existing.length > 0) {
+      galleryPreviewWrap.innerHTML = existing.slice(0, 8).map((img, idx) => `
+        <article class="upload-preview-card">
+          <img src="${resolveMediaUrl(img.path)}" alt="${img.alt || 'Image galerie actuelle'}" class="upload-preview-image" />
+          <div class="upload-preview-meta">
+            <strong>Image galerie ${idx + 1}</strong>
+            <small>${img.alt || 'Sans alt'}</small>
+          </div>
+          <span class="upload-badge">Actuelle</span>
+        </article>
+      `).join('');
+      return;
+    }
+
+    galleryPreviewWrap.innerHTML = '';
+  }
+
+  function removeGalleryFile(index) {
+    const current = Array.from(galleryEl.files || []);
+    if (index < 0 || index >= current.length) return;
+    const dt = new DataTransfer();
+    current.forEach((file, idx) => {
+      if (idx !== index) dt.items.add(file);
+    });
+    galleryEl.files = dt.files;
+    renderGalleryPreview();
+    renderGalleryAltInputs();
+  }
+
   async function loadCategories() {
     const res = await fetch(`${API_BASE}/categories`, { headers: authHeaders() });
     const data = await res.json();
@@ -166,6 +304,7 @@
   }
 
   function mapArticleForEdit(article) {
+    editingArticle = article;
     idEl.value = article.id;
     titleEl.value = article.title || '';
     slugEl.value = article.slug || '';
@@ -178,6 +317,8 @@
     selectedCategoryIds = Array.isArray(article.categories) ? article.categories.map((c) => c.id) : [];
     formTitleEl.textContent = 'Modifier article';
     renderCategoryChips();
+    renderCoverPreview();
+    renderGalleryPreview();
   }
 
   async function loadArticles() {
@@ -215,7 +356,36 @@
     renderCategoryChips();
   });
 
-  galleryEl.addEventListener('change', renderGalleryAltInputs);
+  categoriesSearchEl.addEventListener('input', renderCategoryChips);
+
+  selectAllCategoriesBtn.addEventListener('click', () => {
+    selectedCategoryIds = categories.map((cat) => cat.id);
+    renderCategoryChips();
+  });
+
+  clearAllCategoriesBtn.addEventListener('click', () => {
+    selectedCategoryIds = [];
+    renderCategoryChips();
+  });
+
+  coverEl.addEventListener('change', renderCoverPreview);
+  galleryEl.addEventListener('change', () => {
+    renderGalleryPreview();
+    renderGalleryAltInputs();
+  });
+
+  coverPreviewWrap.addEventListener('click', (e) => {
+    const btn = e.target.closest('button[data-action="clear-cover"]');
+    if (!btn) return;
+    coverEl.value = '';
+    renderCoverPreview();
+  });
+
+  galleryPreviewWrap.addEventListener('click', (e) => {
+    const btn = e.target.closest('button[data-action="remove-gallery-file"]');
+    if (!btn) return;
+    removeGalleryFile(Number(btn.dataset.index));
+  });
 
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -249,14 +419,16 @@
       return;
     }
 
-    galleryFiles.forEach((file, idx) => {
+    for (let idx = 0; idx < galleryFiles.length; idx += 1) {
+      const file = galleryFiles[idx];
       const alt = (altInputs[idx].value || '').trim();
       if (!alt) {
-        throw new Error('Alt galerie manquant');
+        toast('Alt galerie manquant', 'error');
+        return;
       }
       alts.push(alt);
       fd.append('galleryImages', file);
-    });
+    }
 
     fd.append('galleryAlts', JSON.stringify(alts));
 

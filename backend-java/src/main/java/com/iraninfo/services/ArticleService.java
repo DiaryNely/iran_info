@@ -1,10 +1,5 @@
 package com.iraninfo.services;
 
-import com.iraninfo.dao.ArticleDao;
-import com.iraninfo.models.Article;
-import com.iraninfo.models.GalleryImage;
-import com.iraninfo.models.User;
-
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -13,7 +8,17 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.sql.SQLException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+
+import com.iraninfo.dao.ArticleDao;
+import com.iraninfo.models.Article;
+import com.iraninfo.models.GalleryImage;
+import com.iraninfo.models.User;
+import com.iraninfo.utils.SlugUtil;
 
 import jakarta.servlet.http.Part;
 
@@ -47,9 +52,20 @@ public class ArticleService {
         return article;
     }
 
+    public Article findOneById(long id) throws SQLException {
+        Article article = articleDao.findById(id);
+        if (article == null) {
+            throw new IllegalStateException("Article not found");
+        }
+        return article;
+    }
+
     public Article create(Map<String, String> fields, long userId,
             Part coverImagePart, List<Part> galleryParts) throws SQLException, IOException {
-        String slug = fields.get("slug");
+        String slug = normalizeOrGenerateSlug(fields.get("slug"), fields.get("title"));
+        if (slug.isEmpty()) {
+            throw new IllegalArgumentException("Slug is required");
+        }
         if (articleDao.slugExists(slug)) {
             throw new IllegalArgumentException("Article slug already exists");
         }
@@ -119,6 +135,12 @@ public class ArticleService {
 
         // Check slug uniqueness
         String newSlug = fields.get("slug");
+        if (newSlug != null) {
+            newSlug = normalizeOrGenerateSlug(newSlug, fields.getOrDefault("title", article.getTitle()));
+            if (newSlug.isEmpty()) {
+                throw new IllegalArgumentException("Slug is required");
+            }
+        }
         if (newSlug != null && !newSlug.equals(article.getSlug())) {
             if (articleDao.slugExists(newSlug)) {
                 throw new IllegalArgumentException("Article slug already exists");
@@ -276,6 +298,13 @@ public class ArticleService {
                 .replaceAll("[^a-zA-Z0-9\\-_]", "-")
                 .replaceAll("-+", "-")
                 .toLowerCase();
+    }
+
+    private String normalizeOrGenerateSlug(String providedSlug, String title) {
+        String slug = providedSlug != null && !providedSlug.trim().isEmpty()
+                ? SlugUtil.toSlug(providedSlug)
+                : SlugUtil.toSlug(title);
+        return slug;
     }
 
     private String getFileName(Part part) {

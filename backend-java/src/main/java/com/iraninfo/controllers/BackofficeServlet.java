@@ -1,14 +1,16 @@
 package com.iraninfo.controllers;
 
+import java.io.IOException;
+
 import com.iraninfo.services.ArticleService;
 import com.iraninfo.services.CategoryService;
-import com.iraninfo.utils.ResponseUtil;
+import com.iraninfo.utils.JsonUtil;
+
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import java.io.IOException;
 
 @WebServlet("/backoffice/*")
 public class BackofficeServlet extends HttpServlet {
@@ -51,8 +53,10 @@ public class BackofficeServlet extends HttpServlet {
                         long featured = articles.stream().filter(a -> a.isFeatured()).count();
                         req.setAttribute("totalPublished", published);
                         req.setAttribute("totalFeatured", featured);
+                        req.setAttribute("dashboardArticlesJson", JsonUtil.toJson(articles));
                     } catch (Exception e) {
                         req.setAttribute("error", e.getMessage());
+                        req.setAttribute("dashboardArticlesJson", "[]");
                     }
                     req.getRequestDispatcher("/WEB-INF/backoffice/dashboard.jsp").forward(req, resp);
                     break;

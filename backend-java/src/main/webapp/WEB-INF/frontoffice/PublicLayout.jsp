@@ -12,12 +12,12 @@
   <div class="news-shell">
     <header class="news-header">
       <div class="news-header-inner">
-        <a href="HomeFrontPage.jsp" class="news-logo" aria-label="Aller a l'accueil Iran Info">
+        <a href="<%= request.getContextPath() %>/" class="news-logo" aria-label="Aller a l'accueil Iran Info">
           IRAN INFO
         </a>
 
         <nav class="news-nav" aria-label="Navigation principale">
-          <a href="HomeFrontPage.jsp" class="news-nav-link">Accueil</a>
+          <a href="<%= request.getContextPath() %>/" class="news-nav-link">Accueil</a>
         </nav>
 
         <div class="news-header-actions">
@@ -31,7 +31,7 @@
         <h1 id="layout-title">Public Layout</h1>
         <p>Ce fichier correspond au composant de layout React. Les pages JSP concretes sont:</p>
         <ul>
-          <li><a href="HomeFrontPage.jsp">HomeFrontPage.jsp</a></li>
+          <li><a href="<%= request.getContextPath() %>/">Accueil</a></li>
           <li><a href="ArticleFrontPage.jsp">ArticleFrontPage.jsp?slug=...</a></li>
         </ul>
       </section>
@@ -50,7 +50,7 @@
       var links = document.querySelectorAll('.news-nav-link');
       links.forEach(function (link) {
         var href = link.getAttribute('href') || '';
-        if ((current === '' && href === 'HomeFrontPage.jsp') || current === href) {
+        if (href.endsWith('/') && current === '') {
           link.classList.add('active');
         }
       });
