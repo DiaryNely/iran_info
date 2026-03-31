@@ -117,7 +117,12 @@ final class ArticleRepository
                 ) VALUES (
                     :user_id, :title, :content, :cover_image_path, :cover_image_alt,
                     :gallery_images::jsonb, :slug, :meta_title, :meta_description, :meta_keywords,
-                    :status, :featured, NOW()
+                    :status,
+                    CASE
+                        WHEN lower(trim(CAST(:featured_text AS text))) IN (\'1\', \'true\', \'t\', \'on\', \'yes\') THEN TRUE
+                        ELSE FALSE
+                    END,
+                    NOW()
                 )
                 RETURNING id
             ';
@@ -135,7 +140,7 @@ final class ArticleRepository
                 'meta_description' => $payload['meta_description'],
                 'meta_keywords' => $payload['meta_keywords'],
                 'status' => $payload['status'],
-                'featured' => !empty($payload['featured']),
+                'featured_text' => isset($payload['featured']) ? (string) $payload['featured'] : '',
             ]);
 
             $id = (int) $stmt->fetchColumn();
@@ -170,7 +175,10 @@ final class ArticleRepository
                     meta_description = :meta_description,
                     meta_keywords = :meta_keywords,
                     status = :status,
-                    featured = :featured,
+                    featured = CASE
+                        WHEN lower(trim(CAST(:featured_text AS text))) IN (\'1\', \'true\', \'t\', \'on\', \'yes\') THEN TRUE
+                        ELSE FALSE
+                    END,
                     updated_at = NOW()
                 WHERE id = :id
             ';
@@ -188,7 +196,7 @@ final class ArticleRepository
                 'meta_description' => $payload['meta_description'],
                 'meta_keywords' => $payload['meta_keywords'],
                 'status' => $payload['status'],
-                'featured' => !empty($payload['featured']),
+                'featured_text' => isset($payload['featured']) ? (string) $payload['featured'] : '',
             ]);
 
             $this->syncCategories($id, $categoryIds);
