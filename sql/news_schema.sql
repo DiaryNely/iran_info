@@ -74,4 +74,15 @@ CREATE INDEX IF NOT EXISTS idx_articles_published_at ON articles (published_at D
 CREATE INDEX IF NOT EXISTS idx_categories_created_at ON categories (created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_article_category_category_id ON article_category (category_id);
 
+-- Default admin seed (password: admin123).
+-- Change this password immediately in production.
+INSERT INTO users (username, email, password_hash, role)
+VALUES (
+  'admin',
+  'admin@iran.local',
+  '$2y$10$sbFxwXJSK3Jh4zKiLpQVP.4US75oNEyHKVpXGc8dxJ8RVWSkeLKxW',
+  'admin'
+)
+ON CONFLICT DO NOTHING;
+
 COMMIT;
