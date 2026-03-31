@@ -61,6 +61,11 @@
   <meta property="og:description" content="<?= htmlspecialchars($seoDescription, ENT_QUOTES, 'UTF-8') ?>">
   <meta property="og:type" content="website">
   <meta property="og:url" content="<?= htmlspecialchars($canonicalUrl, ENT_QUOTES, 'UTF-8') ?>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap" media="print" onload="this.media='all'">
+  <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap"></noscript>
   <script type="application/ld+json"><?= json_encode($homeSchema, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?></script>
   <link rel="stylesheet" href="/assets/frontoffice.css">
 </head>
@@ -139,12 +144,23 @@
   </footer>
 </div>
 
+<script id="home-articles-json" type="application/json"><?= json_encode($initialArticles, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?></script>
+
 <script>
   (function () {
-    var API_BASE = '/api';
+    var jsonNode = document.getElementById('home-articles-json');
+    var initialArticles = [];
+    if (jsonNode) {
+      try {
+        initialArticles = JSON.parse(jsonNode.textContent || '[]');
+      } catch (e) {
+        initialArticles = [];
+      }
+    }
+
     var state = {
-      articles: [],
-      loading: true,
+      articles: Array.isArray(initialArticles) ? initialArticles : [],
+      loading: false,
       query: '',
       selectedDate: '',
       sortOrder: 'newest',
@@ -284,6 +300,18 @@
       });
     }
 
+    function prepareSearchTokens(articles) {
+      return (Array.isArray(articles) ? articles : []).map(function (article) {
+        var clone = Object.assign({}, article);
+        clone._searchTokens = normalizeTextForSearch(
+          (article.title || '') + ' ' + (article.metaDescription || '') + ' ' + (article.content || '')
+        );
+        return clone;
+      });
+    }
+
+    state.articles = prepareSearchTokens(state.articles);
+
     function getFilteredArticles(options) {
       var excludeSelectedCategory = !!(options && options.excludeSelectedCategory);
       var queryTokens = normalizeTextForSearch(state.query);
@@ -299,10 +327,7 @@
         })
         .filter(function (article) {
           if (queryTokens.length === 0) return true;
-
-          var textTokens = normalizeTextForSearch(
-            (article.title || '') + ' ' + (article.metaDescription || '') + ' ' + (article.content || '')
-          );
+          var textTokens = Array.isArray(article._searchTokens) ? article._searchTokens : [];
           var textSet = new Set(textTokens);
 
           return queryTokens.every(function (queryToken) {
@@ -351,7 +376,7 @@
       if (imageUrl) {
         imageHtml =
           '<a href="/article/' + encodeURIComponent(article.slug) + '" aria-label="Ouvrir ' + escapeHtml(article.title) + '" class="news-card-image-link-large">' +
-          '<img src="' + imageUrl + '" alt="' + escapeHtml(article.coverImageAlt || article.title) + '" class="news-card-image news-card-image-large" loading="lazy" decoding="async" />' +
+          '<img src="' + imageUrl + '" alt="' + escapeHtml(article.coverImageAlt || article.title) + '" class="news-card-image news-card-image-large" loading="lazy" decoding="async" width="1280" height="720" />' +
           '</a>';
       }
 
@@ -397,13 +422,13 @@
       var leadSummary = lead.metaDescription || ((lead.content || '').slice(0, 240) + '...');
       var leadImage = getFeaturedImageUrl(lead);
       var leadImageHtml = leadImage
-        ? '<img src="' + leadImage + '" alt="' + escapeHtml(lead.coverImageAlt || lead.title) + '" class="news-lead-image" loading="lazy" decoding="async" />'
+        ? '<img src="' + leadImage + '" alt="' + escapeHtml(lead.coverImageAlt || lead.title) + '" class="news-lead-image" loading="eager" fetchpriority="high" decoding="async" width="1280" height="720" />'
         : '<div class="news-lead-image news-image-fallback">Image indisponible</div>';
 
       var highlightsHtml = highlights.map(function (item) {
         var image = getFeaturedImageUrl(item);
         var thumb = image
-          ? '<img src="' + image + '" alt="' + escapeHtml(item.coverImageAlt || item.title) + '" class="news-highlight-thumb" loading="lazy" decoding="async" />'
+          ? '<img src="' + image + '" alt="' + escapeHtml(item.coverImageAlt || item.title) + '" class="news-highlight-thumb" loading="lazy" decoding="async" width="320" height="240" />'
           : '<div class="news-highlight-thumb news-image-fallback">Image</div>';
 
         return (
@@ -464,7 +489,7 @@
       var feedList = document.getElementById('news-feed-list');
       var emptyMessage = document.getElementById('emptyMessage');
 
-      var remainingArticles = filteredArticles.length > 0 ? filteredArticles.slice(1) : [];
+      var remainingArticles = filteredArticles.length > 0 ? filteredArticles.slice(1, 9) : [];
       var featuredHtml = featuredSectionHtml(filteredArticles, sideArticles, popularArticles, remainingArticles);
       feedList.innerHTML = featuredHtml;
 
@@ -475,25 +500,15 @@
       }
     }
 
-    async function loadArticles() {
-      state.loading = true;
-      render();
-
-      try {
-        var response = await fetch(API_BASE + '/articles');
-        var data = await response.json();
-        state.articles = Array.isArray(data) ? data : [];
-      } catch (error) {
-        state.articles = [];
-      } finally {
-        state.loading = false;
-        render();
-      }
-    }
-
+    var queryTimer = null;
     document.getElementById('queryInput').addEventListener('input', function (event) {
       state.query = event.target.value;
-      render();
+      if (queryTimer !== null) {
+        clearTimeout(queryTimer);
+      }
+      queryTimer = setTimeout(function () {
+        render();
+      }, 120);
     });
 
     document.getElementById('dateInput').addEventListener('change', function (event) {
@@ -506,7 +521,7 @@
       render();
     });
 
-    loadArticles();
+    render();
   })();
 </script>
 </body>
